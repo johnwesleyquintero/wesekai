@@ -1,20 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Star, ExternalLink, Loader2, Swords, Globe, Cpu, Terminal, PlayCircle, Copy, Check, Bookmark, BookmarkCheck, Library, X, Trash2, Ban, Info, Crown, FastForward } from 'lucide-react';
-import { fetchTopAnimeList, AnimeData } from './lib/mal';
+import { Cpu, Terminal, Library, Ban, Activity } from 'lucide-react';
+import { fetchTopAnimeList } from './lib/mal';
 import { calculateWorldBuildingScore } from './lib/scoring';
 import { ELITE_ANIME } from './lib/elite';
-
-interface Recommendation {
-  title: string;
-  tags: string[];
-  malData: AnimeData;
-  wbScore: number;
-  wbReasons: string[];
-  isElite?: boolean;
-  confidenceScore?: number;
-  driftMultiplier?: number;
-}
+import { Recommendation } from './types';
+import { EmptyState } from './components/EmptyState';
+import { SkeletonCard } from './components/SkeletonCard';
+import { ResultCard } from './components/ResultCard';
+import { TelemetryModal } from './components/TelemetryModal';
+import { AnimeListModal } from './components/AnimeListModal';
 
 const FILTERS = ['All', 'Isekai', 'Fantasy', 'Military', 'Strategy', 'Reincarnation'];
 
@@ -25,7 +20,7 @@ export default function App() {
   
   // v2 Features
   const [activeFilter, setActiveFilter] = useState('All');
-  const [modalView, setModalView] = useState<'none' | 'arsenal' | 'dropped'>('none');
+  const [modalView, setModalView] = useState<'none' | 'arsenal' | 'dropped' | 'telemetry'>('none');
   const [watchlist, setWatchlist] = useState<Recommendation[]>(() => {
     const saved = localStorage.getItem('wesekai-arsenal');
     return saved ? JSON.parse(saved) : [];
@@ -226,7 +221,11 @@ export default function App() {
     setWatchlist(prev => [...prev, rec]);
     setTagPreferences(prev => {
       const next = { ...prev };
-      rec.tags.forEach(t => next[t] = (next[t] || 0) + 1.0); // +1.0 Core Orbit
+      // Damped Learning: effect = baseWeight * (1 / (1 + currentAbsoluteWeight))
+      rec.tags.forEach(t => {
+        const current = next[t] || 0;
+        next[t] = current + (1.0 / (1 + Math.abs(current)));
+      });
       return next;
     });
     triggerNext();
@@ -240,7 +239,10 @@ export default function App() {
     });
     setTagPreferences(prev => {
       const next = { ...prev };
-      rec.tags.forEach(t => next[t] = (next[t] || 0) - 0.5); // -0.5 Accelerated Decay
+      rec.tags.forEach(t => {
+        const current = next[t] || 0;
+        next[t] = current - (0.5 / (1 + Math.abs(current)));
+      });
       return next;
     });
     triggerNext();
@@ -250,7 +252,10 @@ export default function App() {
     setDroppedList(prev => [...prev, rec]);
     setTagPreferences(prev => {
       const next = { ...prev };
-      rec.tags.forEach(t => next[t] = (next[t] || 0) - 2.0); // -2.0 Instant Freeze
+      rec.tags.forEach(t => {
+        const current = next[t] || 0;
+        next[t] = current - (2.0 / (1 + Math.abs(current))); // Stronger but still damped
+      });
       return next;
     });
     triggerNext();
@@ -263,6 +268,13 @@ export default function App() {
       
       {/* Top Navigation */}
       <div className="absolute top-6 right-6 z-50 flex gap-3">
+        <button 
+          onClick={() => setModalView('telemetry')}
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-full text-zinc-300 hover:text-white hover:border-emerald-500/50 transition-all backdrop-blur-md shadow-lg"
+        >
+          <Activity className="w-4 h-4 text-emerald-400" />
+          <span className="font-medium text-sm hidden sm:inline">Telemetry</span>
+        </button>
         <button 
           onClick={() => setModalView('dropped')}
           className="flex items-center gap-2 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-full text-zinc-300 hover:text-white hover:border-red-500/50 transition-all backdrop-blur-md shadow-lg"
@@ -387,7 +399,14 @@ export default function App() {
 
       {/* Modals */}
       <AnimatePresence>
-        {modalView !== 'none' && (
+        {modalView === 'telemetry' && (
+          <TelemetryModal 
+            tagPreferences={tagPreferences} 
+            sessionMemory={sessionMemory} 
+            onClose={() => setModalView('none')} 
+          />
+        )}
+        {(modalView === 'arsenal' || modalView === 'dropped') && (
           <AnimeListModal 
             type={modalView}
             watchlist={modalView === 'arsenal' ? watchlist : droppedList} 
@@ -403,359 +422,5 @@ export default function App() {
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-// --- Subcomponents ---
-
-function EmptyState() {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="w-full max-w-2xl border-2 border-dashed border-zinc-800/50 rounded-3xl p-12 flex flex-col items-center justify-center text-zinc-500 bg-zinc-900/20 backdrop-blur-sm"
-    >
-      <Swords className="w-12 h-12 mb-4 opacity-20" />
-      <p className="font-display text-lg text-center">No new recommendations found for this filter.<br/>Try refreshing or changing the filter.</p>
-    </motion.div>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="w-full h-full bg-zinc-900/40 border border-zinc-800/50 rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl flex flex-col md:flex-row"
-    >
-      <div className="w-full md:w-2/5 aspect-[3/4] md:aspect-auto bg-zinc-800/50 animate-pulse" />
-      <div className="w-full md:w-3/5 p-6 md:p-8 flex flex-col gap-4">
-        <div className="flex gap-2 mb-2">
-          <div className="h-6 w-16 bg-zinc-800/50 rounded-full animate-pulse" />
-          <div className="h-6 w-20 bg-zinc-800/50 rounded-full animate-pulse" />
-          <div className="h-6 w-14 bg-zinc-800/50 rounded-full animate-pulse" />
-        </div>
-        <div className="h-10 w-3/4 bg-zinc-800/50 rounded-lg animate-pulse mb-4" />
-        <div className="flex gap-4 mb-6">
-          <div className="h-12 w-32 bg-zinc-800/50 rounded-xl animate-pulse" />
-          <div className="h-12 w-32 bg-zinc-800/50 rounded-xl animate-pulse" />
-        </div>
-        <div className="space-y-2 mb-8">
-          <div className="h-4 w-full bg-zinc-800/50 rounded animate-pulse" />
-          <div className="h-4 w-full bg-zinc-800/50 rounded animate-pulse" />
-          <div className="h-4 w-5/6 bg-zinc-800/50 rounded animate-pulse" />
-          <div className="h-4 w-4/6 bg-zinc-800/50 rounded animate-pulse" />
-        </div>
-        <div className="mt-auto pt-6 border-t border-zinc-800/50">
-          <div className="h-5 w-32 bg-zinc-800/50 rounded animate-pulse" />
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-const cardVariants = {
-  initial: ({ confidence }: { confidence: number }) => {
-    if (confidence > 0.8) return { opacity: 0, scale: 0.92, y: 0, filter: 'blur(0px)' };
-    if (confidence > 0.5) return { opacity: 0, scale: 0.95, y: 20, filter: 'blur(4px)' };
-    return { opacity: 0, scale: 0.98, y: 40, filter: 'blur(8px)' };
-  },
-  animate: ({ confidence }: { confidence: number }) => {
-    if (confidence > 0.8) return { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)', transition: { type: 'spring', stiffness: 400, damping: 25 } };
-    if (confidence > 0.5) return { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5, ease: 'easeOut', delay: 0.15 } };
-    return { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.7, ease: 'easeInOut', delay: 0.2 } };
-  },
-  exit: ({ exitAction }: { exitAction: string }) => {
-    if (exitAction === 'watch') return { scale: 1.05, opacity: 0, filter: 'brightness(1.5)', transition: { duration: 0.3 } };
-    if (exitAction === 'skip') return { x: -100, opacity: 0, transition: { duration: 0.3, ease: 'easeIn' } };
-    if (exitAction === 'drop') return { y: 100, scale: 0.9, opacity: 0, filter: 'sepia(1) hue-rotate(-50deg) saturate(5)', transition: { duration: 0.4 } };
-    return { opacity: 0, scale: 0.9 };
-  }
-};
-
-const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () => void, onSkip: () => void, onDrop: () => void }> = React.memo(({ recommendation, onWatch, onSkip, onDrop }) => {
-  const [copied, setCopied] = useState(false);
-  const [localExit, setLocalExit] = useState('none');
-  
-  const confidence = recommendation.confidenceScore || 0.5;
-  const isSuppressed = (recommendation.driftMultiplier || 1) < 1;
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(recommendation.title);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleWatch = () => { setLocalExit('watch'); onWatch(); };
-  const handleSkip = () => { setLocalExit('skip'); onSkip(); };
-  const handleDrop = () => { setLocalExit('drop'); onDrop(); };
-
-  return (
-    <motion.div
-      custom={{ confidence, exitAction: localExit }}
-      variants={cardVariants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      className={`w-full relative group h-full transition-all duration-500 ${isSuppressed ? 'saturate-50 opacity-90' : ''}`}
-    >
-      {/* Animated Glow Behind Card */}
-      <div className={`absolute -inset-0.5 rounded-[2rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000 ${recommendation.isElite ? 'bg-gradient-to-br from-yellow-500/40 to-amber-600/40' : 'bg-gradient-to-br from-indigo-500/30 to-purple-600/30'}`}></div>
-      
-      <div className={`relative w-full h-full bg-zinc-900/80 border rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl flex flex-col md:flex-row ${recommendation.isElite ? 'border-yellow-500/40' : 'border-zinc-700/50'}`}>
-        
-        {/* Elite Badge */}
-        {recommendation.isElite && (
-          <div className="absolute top-4 -right-12 bg-gradient-to-r from-yellow-500 to-amber-600 text-white text-[10px] font-bold px-12 py-1.5 shadow-lg flex items-center gap-1.5 z-50 rotate-45 uppercase tracking-widest">
-            <Crown className="w-3 h-3" /> Wesley Approved
-          </div>
-        )}
-        
-        {/* Image Section */}
-        <div className="w-full md:w-2/5 relative aspect-[3/4] md:aspect-auto overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent md:bg-gradient-to-r md:from-transparent md:via-zinc-900/50 md:to-zinc-900 z-10" />
-          <motion.img 
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.8 }}
-            src={recommendation.malData.imageUrl} 
-            alt={recommendation.malData.title}
-            className="absolute inset-0 w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-            loading="lazy"
-            decoding="async"
-          />
-        </div>
-
-        {/* Content Section */}
-        <div className="w-full md:w-3/5 p-6 md:p-8 flex flex-col relative z-20">
-          
-          {/* Tags & Action Buttons */}
-          <div className="flex justify-between items-start mb-5">
-            <div className="flex flex-wrap gap-2">
-              {recommendation.tags.map((tag, i) => (
-                <motion.span 
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + (i * 0.05) }}
-                  key={tag}
-                  className={`px-3 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-widest border rounded-md ${
-                    recommendation.isElite 
-                      ? 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.1)]' 
-                      : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30 shadow-[0_0_10px_rgba(99,102,241,0.1)]'
-                  }`}
-                >
-                  {tag}
-                </motion.span>
-              ))}
-            </div>
-            
-            <div className="flex gap-2 shrink-0 ml-2">
-              <button 
-                onClick={handleDrop}
-                className="p-2 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-all"
-                title="Drop Anime (Never show again)"
-              >
-                <Ban className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={handleSkip}
-                className="p-2 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-white hover:border-zinc-500 transition-all"
-                title="Skip for now"
-              >
-                <FastForward className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={handleWatch}
-                className="p-2 rounded-full border bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/40 hover:text-white transition-all shadow-[0_0_15px_rgba(99,102,241,0.2)]"
-                title="Save to Arsenal & Next"
-              >
-                <Bookmark className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Title */}
-          <h2 className="font-display text-3xl md:text-4xl font-bold mb-6 leading-tight text-white drop-shadow-md">
-            {recommendation.malData.title}
-          </h2>
-
-          {/* RPG Stats / Scores */}
-          <div className="flex flex-wrap items-center gap-4 mb-8">
-            <div className="flex items-center gap-3 bg-zinc-950/50 border border-zinc-800 rounded-xl p-3 shadow-inner relative group/score cursor-help">
-              <div className="p-2 bg-indigo-500/20 rounded-lg">
-                <Globe className="w-5 h-5 text-indigo-400" />
-              </div>
-              <div>
-                <div className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-0.5">World-Building</div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-display font-bold text-xl text-indigo-100">{recommendation.wbScore.toFixed(1)}</span>
-                  <span className="text-zinc-600 text-sm">/10</span>
-                </div>
-              </div>
-              
-              {/* Explainable AI Tooltip */}
-              <div className="absolute bottom-full left-0 mb-3 w-56 p-4 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl opacity-0 group-hover/score:opacity-100 transition-opacity pointer-events-none z-50">
-                <div className="text-xs font-bold text-zinc-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                  <Info className="w-3.5 h-3.5 text-indigo-400" /> Why this score?
-                </div>
-                <ul className="space-y-1.5">
-                  {recommendation.wbReasons.map((reason, idx) => (
-                    <li key={idx} className="text-sm text-indigo-200 font-medium flex items-start gap-2">
-                      <span className="text-indigo-500 mt-0.5">•</span> {reason}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 bg-zinc-950/50 border border-zinc-800 rounded-xl p-3 shadow-inner">
-              <div className="p-2 bg-yellow-500/20 rounded-lg">
-                <Star className="w-5 h-5 text-yellow-500" />
-              </div>
-              <div>
-                <div className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-0.5">MAL Rating</div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-display font-bold text-xl text-yellow-100">{recommendation.malData.score}</span>
-                  <span className="text-zinc-600 text-sm">/10</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Synopsis */}
-          <div className="prose prose-invert prose-zinc max-w-none mb-8">
-            <p className="text-zinc-400 leading-relaxed text-sm md:text-base line-clamp-6 md:line-clamp-none font-light">
-              {recommendation.malData.synopsis}
-            </p>
-          </div>
-
-          {/* Footer Link */}
-          <div className="mt-auto pt-6 border-t border-zinc-800/60 flex flex-wrap items-center gap-6">
-            <a 
-              href={recommendation.malData.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-indigo-300 transition-colors"
-            >
-              Access Database Entry
-              <ExternalLink className="w-4 h-4 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
-            </a>
-            <a 
-              href={`https://aniwatchtv.to/search?keyword=${encodeURIComponent(recommendation.malData.title)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-purple-400 transition-colors"
-            >
-              <PlayCircle className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
-              Check Anime
-            </a>
-            <button 
-              onClick={copyToClipboard}
-              className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-emerald-400 transition-colors ml-auto"
-            >
-              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 group-hover/link:scale-110 transition-transform" />}
-              {copied ? <span className="text-emerald-400">Copied!</span> : 'Copy Title'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-});
-
-function AnimeListModal({ type, watchlist, onClose, onRemove }: { type: 'arsenal' | 'dropped', watchlist: Recommendation[], onClose: () => void, onRemove: (rec: Recommendation) => void }) {
-  const isArsenal = type === 'arsenal';
-  const Icon = isArsenal ? Library : Ban;
-  const title = isArsenal ? "Your Arsenal" : "Dropped Anime";
-  const emptyMsg = isArsenal ? "Your Arsenal is empty." : "No dropped anime yet.";
-  const emptySub = isArsenal ? "Save recommendations to build your watchlist." : "Anime you drop will appear here.";
-  const themeColor = isArsenal ? "text-indigo-400" : "text-red-400";
-  const themeBg = isArsenal ? "bg-indigo-500/20" : "bg-red-500/20";
-  const hoverBorder = isArsenal ? "hover:border-indigo-500/30" : "hover:border-red-500/30";
-  const linkHover = isArsenal ? "hover:text-indigo-300" : "hover:text-red-300";
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-sm"
-    >
-      <motion.div 
-        initial={{ scale: 0.95, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.95, y: 20 }}
-        className="w-full max-w-4xl max-h-[85vh] bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 ${themeBg} rounded-lg`}>
-              <Icon className={`w-6 h-6 ${themeColor}`} />
-            </div>
-            <h2 className="text-2xl font-display font-bold text-white">{title}</h2>
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {watchlist.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-zinc-500 py-12">
-              <Icon className="w-16 h-16 mb-4 opacity-20" />
-              <p className="text-lg font-display">{emptyMsg}</p>
-              <p className="text-sm font-light mt-2">{emptySub}</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {watchlist.map((rec) => (
-                <div key={rec.malData.url} className={`flex gap-4 p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl group ${hoverBorder} transition-colors`}>
-                  <img 
-                    src={rec.malData.imageUrl} 
-                    alt={rec.title} 
-                    className="w-20 h-28 object-cover rounded-lg"
-                    referrerPolicy="no-referrer"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <div className="flex-1 flex flex-col">
-                    <h3 className="font-bold text-zinc-200 line-clamp-2 mb-1">{rec.title}</h3>
-                    <div className="flex items-center gap-2 text-xs text-zinc-500 mb-auto">
-                      <span className="flex items-center gap-1"><Globe className={`w-3 h-3 ${themeColor}`}/> {rec.wbScore.toFixed(1)}</span>
-                      <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500"/> {rec.malData.score}</span>
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <a 
-                        href={`https://aniwatchtv.to/search?keyword=${encodeURIComponent(rec.title)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`text-xs font-medium ${themeColor} ${linkHover} flex items-center gap-1`}
-                      >
-                        <PlayCircle className="w-3 h-3" /> Watch
-                      </a>
-                      <button 
-                        onClick={() => onRemove(rec)}
-                        className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors"
-                        title={`Remove from ${isArsenal ? 'Arsenal' : 'Dropped'}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </motion.div>
-    </motion.div>
   );
 }
