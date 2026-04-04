@@ -1,7 +1,13 @@
-export function calculateWorldBuildingScore(tags: string[]): number {
+export interface ScoringResult {
+  score: number;
+  reasons: string[];
+}
+
+export function calculateWorldBuildingScore(tags: string[]): ScoringResult {
   // Base score is lower now because we are fetching dynamically.
   // Anime with strong world-building tags will score much higher.
   let score = 1.0; 
+  const reasons: string[] = [];
 
   const tagWeights: Record<string, number> = {
     civilization: 3.0,
@@ -38,23 +44,40 @@ export function calculateWorldBuildingScore(tags: string[]): number {
 
   // Add individual tag weights
   tags.forEach(tag => {
-    score += tagWeights[tag.toLowerCase()] || 0.5; // Default weight for unknown tags
+    const lowerTag = tag.toLowerCase();
+    const weight = tagWeights[lowerTag];
+    if (weight) {
+      score += weight;
+      if (weight >= 1.5) {
+        reasons.push(`+ ${tag.charAt(0).toUpperCase() + tag.slice(1)}`);
+      }
+    } else {
+      score += 0.5; // Default weight for unknown tags
+    }
   });
 
   // Synergy bonuses for specific combinations
   const has = (t: string) => tags.includes(t);
 
-  if (has('kingdom') && has('diplomacy')) score += 1.0;
-  if (has('economy') && has('trade')) score += 1.0;
-  if (has('politics') && has('economy')) score += 1.5;
-  if (has('civilization') && has('science')) score += 1.5;
-  if (has('agriculture') && has('economy')) score += 1.0;
-  if (has('rebuild') && has('society')) score += 1.0;
-  if (has('kingdom') && has('nation')) score += 0.5;
-  if (has('strategy') && has('military')) score += 1.0;
-  if (has('invention') && has('economy')) score += 1.0;
-  if (has('isekai') && has('kingdom')) score += 0.5;
+  if (has('kingdom') && has('diplomacy')) { score += 1.0; reasons.push('+ Kingdom Diplomacy'); }
+  if (has('economy') && has('trade')) { score += 1.0; reasons.push('+ Economic Trade'); }
+  if (has('politics') && has('economy')) { score += 1.5; reasons.push('+ Political Economy'); }
+  if (has('civilization') && has('science')) { score += 1.5; reasons.push('+ Scientific Advancement'); }
+  if (has('agriculture') && has('economy')) { score += 1.0; reasons.push('+ Agricultural Economy'); }
+  if (has('rebuild') && has('society')) { score += 1.0; reasons.push('+ Societal Rebuilding'); }
+  if (has('kingdom') && has('nation')) { score += 0.5; }
+  if (has('strategy') && has('military')) { score += 1.0; reasons.push('+ Military Strategy'); }
+  if (has('invention') && has('economy')) { score += 1.0; reasons.push('+ Economic Invention'); }
+  if (has('isekai') && has('kingdom')) { score += 0.5; }
 
   // Ensure score doesn't exceed 10.0 and round to 1 decimal place
-  return Math.min(10.0, Math.round(score * 10) / 10);
+  const finalScore = Math.min(10.0, Math.round(score * 10) / 10);
+  
+  // Deduplicate and limit reasons
+  const uniqueReasons = Array.from(new Set(reasons)).slice(0, 3);
+
+  return {
+    score: finalScore,
+    reasons: uniqueReasons.length > 0 ? uniqueReasons : ['+ Standard World-Building']
+  };
 }

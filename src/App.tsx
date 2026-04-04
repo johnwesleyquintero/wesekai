@@ -1,14 +1,19 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Star, ExternalLink, Loader2, Swords, Globe, Cpu, Terminal, PlayCircle, Copy, Check, Bookmark, BookmarkCheck, Library, X, Trash2, Ban } from 'lucide-react';
+import { Sparkles, Star, ExternalLink, Loader2, Swords, Globe, Cpu, Terminal, PlayCircle, Copy, Check, Bookmark, BookmarkCheck, Library, X, Trash2, Ban, Info, Crown, FastForward } from 'lucide-react';
 import { fetchTopAnimeList, AnimeData } from './lib/mal';
 import { calculateWorldBuildingScore } from './lib/scoring';
+import { ELITE_ANIME } from './lib/elite';
 
 interface Recommendation {
   title: string;
   tags: string[];
   malData: AnimeData;
   wbScore: number;
+  wbReasons: string[];
+  isElite?: boolean;
+  confidenceScore?: number;
+  driftMultiplier?: number;
 }
 
 const FILTERS = ['All', 'Isekai', 'Fantasy', 'Military', 'Strategy', 'Reincarnation'];
@@ -30,6 +35,13 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Omakase Engine State
+  const [candidatePool, setCandidatePool] = useState<Recommendation[]>([]);
+  const [currentRec, setCurrentRec] = useState<Recommendation | null>(null);
+  const [sessionMemory, setSessionMemory] = useState<{ shown: Record<string, number>, skipped: Set<string> }>({ shown: {}, skipped: new Set() });
+  const [tagPreferences, setTagPreferences] = useState<Record<string, number>>({});
+  const [isThinking, setIsThinking] = useState(false);
+
   // Sync Watchlist to LocalStorage
   useEffect(() => {
     localStorage.setItem('wesekai-arsenal', JSON.stringify(watchlist));
@@ -50,23 +62,56 @@ export default function App() {
     setError(null);
     
     try {
+      // 1. Get Elite Anime that match the filter
+      const filteredElite = ELITE_ANIME.filter(anime => {
+        if (activeFilter === 'All') return true;
+        return anime.tags.some(tag => tag.toLowerCase() === activeFilter.toLowerCase());
+      });
+
+      const eliteRecs = filteredElite.map(animeData => {
+        const scoring = calculateWorldBuildingScore(animeData.tags);
+        return {
+          title: animeData.title,
+          tags: animeData.tags,
+          malData: animeData,
+          wbScore: scoring.score,
+          wbReasons: scoring.reasons,
+          isElite: true
+        };
+      });
+
+      // 2. Fetch from API
       const animeList = await fetchTopAnimeList(activeFilter);
 
       if (!animeList || animeList.length === 0) {
         throw new Error("Could not fetch data from MyAnimeList. Please try again.");
       }
 
-      const recs = animeList.map(animeData => ({
-        title: animeData.title,
-        tags: animeData.tags,
-        malData: animeData,
-        wbScore: calculateWorldBuildingScore(animeData.tags)
-      }));
+      const apiRecs = animeList.map(animeData => {
+        const scoring = calculateWorldBuildingScore(animeData.tags);
+        return {
+          title: animeData.title,
+          tags: animeData.tags,
+          malData: animeData,
+          wbScore: scoring.score,
+          wbReasons: scoring.reasons,
+          isElite: false
+        };
+      });
 
-      // Deduplicate by URL to prevent React key collisions
-      const uniqueRecs = Array.from(new Map(recs.map(item => [item.malData.url, item])).values());
+      // 3. Combine and Deduplicate
+      const combined = [...eliteRecs, ...apiRecs];
+      const uniqueRecs = Array.from(new Map(combined.map(item => [item.malData.url, item])).values());
 
-      setRecommendations(uniqueRecs);
+      // 4. Sort: Elite first, then by WB Score
+      uniqueRecs.sort((a, b) => {
+        if (a.isElite && !b.isElite) return -1;
+        if (!a.isElite && b.isElite) return 1;
+        return b.wbScore - a.wbScore;
+      });
+
+      setCandidatePool(uniqueRecs);
+      setCurrentRec(null); // Force compute next
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred.");
     } finally {
@@ -79,39 +124,137 @@ export default function App() {
     fetchRecommendations();
   }, [activeFilter]);
 
-  const toggleArsenal = useCallback((rec: Recommendation) => {
-    setWatchlist(prev => {
-      const exists = prev.find(item => item.malData.url === rec.malData.url);
-      if (exists) {
-        return prev.filter(item => item.malData.url !== rec.malData.url);
+  // Omakase Engine: Compute Next Best Anime
+  const computeNext = useCallback(() => {
+    if (candidatePool.length === 0) return;
+
+    let bestRec: Recommendation | null = null;
+    let bestScore = -Infinity;
+
+    candidatePool.forEach(rec => {
+      // Hard filters
+      if (watchlist.some(w => w.malData.url === rec.malData.url)) return;
+      if (droppedList.some(d => d.malData.url === rec.malData.url)) return;
+
+      // --- DRIFT ENGINE v1 ---
+      let rawTagScore = 0;
+      let frozenBranchHits = 0;
+      let positiveHits = 0;
+
+      rec.tags.forEach(tag => {
+        const weight = tagPreferences[tag] || 0;
+        rawTagScore += weight;
+
+        // Detect frozen branches (repeatedly skipped/dropped)
+        if (weight <= -1.0) frozenBranchHits++;
+        // Detect core taste orbit
+        if (weight >= 1.0) positiveHits++;
+      });
+
+      // Drift Signal: Suppress anime that wander into frozen branches
+      let driftMultiplier = 1.0;
+      if (frozenBranchHits >= 2) {
+        driftMultiplier = 0.1; // Total branch collapse
+      } else if (frozenBranchHits === 1) {
+        driftMultiplier = 0.4; // Heavy suppression
       }
-      return [...prev, rec];
+
+      // Synergy Boost: Reward anime that hit multiple positive branches
+      if (positiveHits >= 2) {
+        driftMultiplier *= 1.3;
+      }
+
+      const tagMatchScore = Math.max(0, Math.min(10, 5 + rawTagScore));
+
+      let finalScore = (rec.wbScore * 0.45) + (rec.malData.score * 0.25) + (tagMatchScore * 0.20) + (rec.isElite ? 2.0 : 0);
+
+      finalScore *= driftMultiplier; // Apply Drift Engine Modifiers
+      // -----------------------
+
+      // Apply memory modifiers
+      const shownCount = sessionMemory.shown[rec.malData.url] || 0;
+      if (shownCount >= 3) finalScore *= 0.4;
+      else if (shownCount >= 2) finalScore *= 0.7;
+
+      if (sessionMemory.skipped.has(rec.malData.url)) finalScore *= 0.6;
+
+      if (finalScore > bestScore) {
+        bestScore = finalScore;
+        
+        // Calculate Confidence Score (0 to 1)
+        // Max theoretical base score is ~11.5
+        const normalizedScore = Math.min(1, finalScore / 11.5);
+        const confidenceScore = Math.max(0, Math.min(1, normalizedScore * driftMultiplier));
+        
+        bestRec = { ...rec, confidenceScore, driftMultiplier };
+      }
     });
-    // Remove from dropped if it's there
-    setDroppedList(prev => prev.filter(item => item.malData.url !== rec.malData.url));
+
+    if (bestRec) {
+      setCurrentRec(bestRec);
+      setSessionMemory(prev => ({
+        ...prev,
+        shown: { ...prev.shown, [bestRec!.malData.url]: (prev.shown[bestRec!.malData.url] || 0) + 1 }
+      }));
+    } else {
+      // Pool exhausted, fetch more
+      setCurrentRec(null);
+      fetchRecommendations();
+    }
+  }, [candidatePool, watchlist, droppedList, sessionMemory, tagPreferences]);
+
+  const triggerNext = useCallback(() => {
+    // Allow React to commit the exitAction state in ResultCard before unmounting
+    requestAnimationFrame(() => {
+      setCurrentRec(null);
+      setIsThinking(true);
+      setTimeout(() => {
+        setIsThinking(false);
+      }, 400); // 400ms thinking pause
+    });
   }, []);
 
-  const toggleDropped = useCallback((rec: Recommendation) => {
-    setDroppedList(prev => {
-      const exists = prev.find(item => item.malData.url === rec.malData.url);
-      if (exists) {
-        return prev.filter(item => item.malData.url !== rec.malData.url);
-      }
-      return [...prev, rec];
-    });
-    // Remove from arsenal if it's there
-    setWatchlist(prev => prev.filter(item => item.malData.url !== rec.malData.url));
-  }, []);
+  // Trigger computeNext when needed
+  useEffect(() => {
+    if (candidatePool.length > 0 && !currentRec && !loading && !isThinking) {
+      computeNext();
+    }
+  }, [candidatePool, currentRec, loading, isThinking, computeNext]);
 
-  // Filter out items already in the Arsenal or Dropped list and limit to 20
-  const displayedRecommendations = useMemo(() => {
-    return recommendations
-      .filter(rec => 
-        !watchlist.some(w => w.malData.url === rec.malData.url) && 
-        !droppedList.some(d => d.malData.url === rec.malData.url)
-      )
-      .slice(0, 20);
-  }, [recommendations, watchlist, droppedList]);
+  // Action Handlers
+  const handleWatch = useCallback((rec: Recommendation) => {
+    setWatchlist(prev => [...prev, rec]);
+    setTagPreferences(prev => {
+      const next = { ...prev };
+      rec.tags.forEach(t => next[t] = (next[t] || 0) + 1.0); // +1.0 Core Orbit
+      return next;
+    });
+    triggerNext();
+  }, [triggerNext]);
+
+  const handleSkip = useCallback((rec: Recommendation) => {
+    setSessionMemory(prev => {
+      const newSkipped = new Set(prev.skipped);
+      newSkipped.add(rec.malData.url);
+      return { ...prev, skipped: newSkipped };
+    });
+    setTagPreferences(prev => {
+      const next = { ...prev };
+      rec.tags.forEach(t => next[t] = (next[t] || 0) - 0.5); // -0.5 Accelerated Decay
+      return next;
+    });
+    triggerNext();
+  }, [triggerNext]);
+
+  const handleDrop = useCallback((rec: Recommendation) => {
+    setDroppedList(prev => [...prev, rec]);
+    setTagPreferences(prev => {
+      const next = { ...prev };
+      rec.tags.forEach(t => next[t] = (next[t] || 0) - 2.0); // -2.0 Instant Freeze
+      return next;
+    });
+    triggerNext();
+  }, [triggerNext]);
 
   return (
     <div className="min-h-screen text-zinc-50 font-sans selection:bg-indigo-500/30 relative overflow-hidden">
@@ -188,33 +331,8 @@ export default function App() {
           ))}
         </motion.div>
 
-        {/* Action Button */}
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={fetchRecommendations}
-          disabled={loading}
-          className="relative group overflow-hidden rounded-2xl bg-zinc-900 border border-indigo-500/30 px-8 py-4 font-display font-semibold text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.3)] transition-all hover:shadow-[0_0_60px_-15px_rgba(79,70,229,0.6)] hover:border-indigo-400/50 disabled:opacity-70 disabled:cursor-not-allowed mb-16"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="absolute inset-0 bg-indigo-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out" />
-          <span className="relative flex items-center gap-3 text-lg">
-            {loading ? (
-              <>
-                <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
-                Scanning Layer...
-              </>
-            ) : (
-              <>
-                <Cpu className="w-6 h-6 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
-                Scan for More
-              </>
-            )}
-          </span>
-        </motion.button>
+        {/* Action Button - Removed for Omakase Flow */}
+        {/* The system auto-fetches when the pool is exhausted. */}
 
         {/* Error State */}
         <AnimatePresence mode="wait">
@@ -234,34 +352,37 @@ export default function App() {
         </AnimatePresence>
 
         {/* Content Area */}
-        <div className="w-full relative min-h-[400px] flex justify-center">
-          {loading ? (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full">
-              <SkeletonCard key="skel1" />
-              <SkeletonCard key="skel2" />
-              <SkeletonCard key="skel3" />
-              <SkeletonCard key="skel4" />
+        <div className="w-full relative min-h-[500px] flex justify-center items-start mt-8">
+          {loading && !currentRec ? (
+            <div className="w-full max-w-4xl">
+              <SkeletonCard />
             </div>
-          ) : displayedRecommendations.length > 0 ? (
-            <motion.div layout className="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full">
-              <AnimatePresence>
-                {displayedRecommendations.map(rec => (
-                  <ResultCard 
-                    key={rec.malData.url} 
-                    recommendation={rec} 
-                    isInArsenal={false}
-                    isDropped={false}
-                    onToggleArsenal={() => toggleArsenal(rec)}
-                    onToggleDropped={() => toggleDropped(rec)}
-                  />
-                ))}
+          ) : currentRec ? (
+            <div className="w-full max-w-4xl">
+              <AnimatePresence mode="wait">
+                <ResultCard 
+                  key={currentRec.malData.url} 
+                  recommendation={currentRec} 
+                  onWatch={() => handleWatch(currentRec)}
+                  onSkip={() => handleSkip(currentRec)}
+                  onDrop={() => handleDrop(currentRec)}
+                />
               </AnimatePresence>
-            </motion.div>
+            </div>
+          ) : (!loading && candidatePool.length > 0) || isThinking ? (
+            <div className="text-zinc-400 text-center flex flex-col items-center justify-center min-h-[400px]">
+              <motion.div
+                animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Cpu className="w-10 h-10 text-indigo-500 mb-4" />
+              </motion.div>
+              <p className="font-display tracking-widest uppercase text-sm text-indigo-300/70">Synthesizing Taste Profile...</p>
+            </div>
           ) : (
             <EmptyState key="empty" />
           )}
         </div>
-
       </div>
 
       {/* Modals */}
@@ -271,7 +392,13 @@ export default function App() {
             type={modalView}
             watchlist={modalView === 'arsenal' ? watchlist : droppedList} 
             onClose={() => setModalView('none')} 
-            onRemove={modalView === 'arsenal' ? toggleArsenal : toggleDropped}
+            onRemove={(rec) => {
+              if (modalView === 'arsenal') {
+                setWatchlist(prev => prev.filter(item => item.malData.url !== rec.malData.url));
+              } else {
+                setDroppedList(prev => prev.filter(item => item.malData.url !== rec.malData.url));
+              }
+            }}
           />
         )}
       </AnimatePresence>
@@ -329,8 +456,31 @@ function SkeletonCard() {
   );
 }
 
-const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolean, isDropped: boolean, onToggleArsenal: () => void, onToggleDropped: () => void }> = React.memo(({ recommendation, isInArsenal, isDropped, onToggleArsenal, onToggleDropped }) => {
+const cardVariants = {
+  initial: ({ confidence }: { confidence: number }) => {
+    if (confidence > 0.8) return { opacity: 0, scale: 0.92, y: 0, filter: 'blur(0px)' };
+    if (confidence > 0.5) return { opacity: 0, scale: 0.95, y: 20, filter: 'blur(4px)' };
+    return { opacity: 0, scale: 0.98, y: 40, filter: 'blur(8px)' };
+  },
+  animate: ({ confidence }: { confidence: number }) => {
+    if (confidence > 0.8) return { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)', transition: { type: 'spring', stiffness: 400, damping: 25 } };
+    if (confidence > 0.5) return { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5, ease: 'easeOut', delay: 0.15 } };
+    return { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.7, ease: 'easeInOut', delay: 0.2 } };
+  },
+  exit: ({ exitAction }: { exitAction: string }) => {
+    if (exitAction === 'watch') return { scale: 1.05, opacity: 0, filter: 'brightness(1.5)', transition: { duration: 0.3 } };
+    if (exitAction === 'skip') return { x: -100, opacity: 0, transition: { duration: 0.3, ease: 'easeIn' } };
+    if (exitAction === 'drop') return { y: 100, scale: 0.9, opacity: 0, filter: 'sepia(1) hue-rotate(-50deg) saturate(5)', transition: { duration: 0.4 } };
+    return { opacity: 0, scale: 0.9 };
+  }
+};
+
+const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () => void, onSkip: () => void, onDrop: () => void }> = React.memo(({ recommendation, onWatch, onSkip, onDrop }) => {
   const [copied, setCopied] = useState(false);
+  const [localExit, setLocalExit] = useState('none');
+  
+  const confidence = recommendation.confidenceScore || 0.5;
+  const isSuppressed = (recommendation.driftMultiplier || 1) < 1;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(recommendation.title);
@@ -338,19 +488,30 @@ const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolea
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleWatch = () => { setLocalExit('watch'); onWatch(); };
+  const handleSkip = () => { setLocalExit('skip'); onSkip(); };
+  const handleDrop = () => { setLocalExit('drop'); onDrop(); };
+
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="w-full relative group h-full"
+      custom={{ confidence, exitAction: localExit }}
+      variants={cardVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className={`w-full relative group h-full transition-all duration-500 ${isSuppressed ? 'saturate-50 opacity-90' : ''}`}
     >
       {/* Animated Glow Behind Card */}
-      <div className="absolute -inset-0.5 bg-gradient-to-br from-indigo-500/30 to-purple-600/30 rounded-[2rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+      <div className={`absolute -inset-0.5 rounded-[2rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000 ${recommendation.isElite ? 'bg-gradient-to-br from-yellow-500/40 to-amber-600/40' : 'bg-gradient-to-br from-indigo-500/30 to-purple-600/30'}`}></div>
       
-      <div className="relative w-full h-full bg-zinc-900/80 border border-zinc-700/50 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl flex flex-col md:flex-row">
+      <div className={`relative w-full h-full bg-zinc-900/80 border rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl flex flex-col md:flex-row ${recommendation.isElite ? 'border-yellow-500/40' : 'border-zinc-700/50'}`}>
+        
+        {/* Elite Badge */}
+        {recommendation.isElite && (
+          <div className="absolute top-4 -right-12 bg-gradient-to-r from-yellow-500 to-amber-600 text-white text-[10px] font-bold px-12 py-1.5 shadow-lg flex items-center gap-1.5 z-50 rotate-45 uppercase tracking-widest">
+            <Crown className="w-3 h-3" /> Wesley Approved
+          </div>
+        )}
         
         {/* Image Section */}
         <div className="w-full md:w-2/5 relative aspect-[3/4] md:aspect-auto overflow-hidden">
@@ -380,7 +541,11 @@ const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolea
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 + (i * 0.05) }}
                   key={tag}
-                  className="px-3 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-widest bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 rounded-md shadow-[0_0_10px_rgba(99,102,241,0.1)]"
+                  className={`px-3 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-widest border rounded-md ${
+                    recommendation.isElite 
+                      ? 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.1)]' 
+                      : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30 shadow-[0_0_10px_rgba(99,102,241,0.1)]'
+                  }`}
                 >
                   {tag}
                 </motion.span>
@@ -389,18 +554,25 @@ const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolea
             
             <div className="flex gap-2 shrink-0 ml-2">
               <button 
-                onClick={onToggleDropped}
-                className={`p-2 rounded-full border transition-all ${isDropped ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500'}`}
-                title={isDropped ? "Remove from Dropped" : "Drop Anime"}
+                onClick={handleDrop}
+                className="p-2 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-all"
+                title="Drop Anime (Never show again)"
               >
                 <Ban className="w-5 h-5" />
               </button>
               <button 
-                onClick={onToggleArsenal}
-                className={`p-2 rounded-full border transition-all ${isInArsenal ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500'}`}
-                title={isInArsenal ? "Remove from Arsenal" : "Save to Arsenal"}
+                onClick={handleSkip}
+                className="p-2 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-white hover:border-zinc-500 transition-all"
+                title="Skip for now"
               >
-                {isInArsenal ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+                <FastForward className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={handleWatch}
+                className="p-2 rounded-full border bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/40 hover:text-white transition-all shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                title="Save to Arsenal & Next"
+              >
+                <Bookmark className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -412,7 +584,7 @@ const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolea
 
           {/* RPG Stats / Scores */}
           <div className="flex flex-wrap items-center gap-4 mb-8">
-            <div className="flex items-center gap-3 bg-zinc-950/50 border border-zinc-800 rounded-xl p-3 shadow-inner">
+            <div className="flex items-center gap-3 bg-zinc-950/50 border border-zinc-800 rounded-xl p-3 shadow-inner relative group/score cursor-help">
               <div className="p-2 bg-indigo-500/20 rounded-lg">
                 <Globe className="w-5 h-5 text-indigo-400" />
               </div>
@@ -422,6 +594,20 @@ const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolea
                   <span className="font-display font-bold text-xl text-indigo-100">{recommendation.wbScore.toFixed(1)}</span>
                   <span className="text-zinc-600 text-sm">/10</span>
                 </div>
+              </div>
+              
+              {/* Explainable AI Tooltip */}
+              <div className="absolute bottom-full left-0 mb-3 w-56 p-4 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl opacity-0 group-hover/score:opacity-100 transition-opacity pointer-events-none z-50">
+                <div className="text-xs font-bold text-zinc-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                  <Info className="w-3.5 h-3.5 text-indigo-400" /> Why this score?
+                </div>
+                <ul className="space-y-1.5">
+                  {recommendation.wbReasons.map((reason, idx) => (
+                    <li key={idx} className="text-sm text-indigo-200 font-medium flex items-start gap-2">
+                      <span className="text-indigo-500 mt-0.5">•</span> {reason}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
 
