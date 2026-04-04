@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Star, ExternalLink, Loader2, Swords, Globe, Cpu, Terminal, PlayCircle, Copy, Check } from 'lucide-react';
+import { Sparkles, Star, ExternalLink, Loader2, Swords, Globe, Cpu, Terminal, PlayCircle, Copy, Check, Bookmark, BookmarkCheck, Library, X, Trash2 } from 'lucide-react';
 import { fetchDynamicRecommendation, AnimeData } from './lib/mal';
 import { calculateWorldBuildingScore } from './lib/scoring';
 
@@ -11,10 +11,25 @@ interface Recommendation {
   wbScore: number;
 }
 
+const FILTERS = ['All', 'Isekai', 'Fantasy', 'Sci-Fi', 'Military', 'Strategy', 'Reincarnation'];
+
 export default function App() {
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // v2 Features
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [showArsenal, setShowArsenal] = useState(false);
+  const [watchlist, setWatchlist] = useState<Recommendation[]>(() => {
+    const saved = localStorage.getItem('wesekai-arsenal');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Sync Watchlist to LocalStorage
+  useEffect(() => {
+    localStorage.setItem('wesekai-arsenal', JSON.stringify(watchlist));
+  }, [watchlist]);
 
   // Update document title dynamically
   useEffect(() => {
@@ -30,7 +45,7 @@ export default function App() {
     setError(null);
     
     try {
-      const animeData = await fetchDynamicRecommendation();
+      const animeData = await fetchDynamicRecommendation(activeFilter);
 
       if (!animeData) {
         throw new Error("Could not fetch data from MyAnimeList. Please try again.");
@@ -51,11 +66,32 @@ export default function App() {
     }
   };
 
+  const toggleArsenal = (rec: Recommendation) => {
+    setWatchlist(prev => {
+      const exists = prev.find(item => item.malData.url === rec.malData.url);
+      if (exists) {
+        return prev.filter(item => item.malData.url !== rec.malData.url);
+      }
+      return [...prev, rec];
+    });
+  };
+
   return (
     <div className="min-h-screen text-zinc-50 font-sans selection:bg-indigo-500/30 relative overflow-hidden">
       {/* Ambient Background Glow */}
       <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none" />
       
+      {/* Top Navigation */}
+      <div className="absolute top-6 right-6 z-50">
+        <button 
+          onClick={() => setShowArsenal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-full text-zinc-300 hover:text-white hover:border-indigo-500/50 transition-all backdrop-blur-md shadow-lg"
+        >
+          <Library className="w-4 h-4 text-indigo-400" />
+          <span className="font-medium text-sm">Arsenal ({watchlist.length})</span>
+        </button>
+      </div>
+
       <div className="max-w-4xl mx-auto px-6 py-12 md:py-20 flex flex-col items-center relative z-10">
         
         {/* System Status Indicator */}
@@ -76,7 +112,7 @@ export default function App() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="text-center mb-12"
+          className="text-center mb-10"
         >
           <h1 className="font-display text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent drop-shadow-sm">
             WESEKAI
@@ -84,6 +120,28 @@ export default function App() {
           <p className="text-zinc-400 text-lg md:text-xl max-w-lg mx-auto font-light">
             Dynamic isekai recommendations powered by the <span className="text-indigo-300 font-medium">Wesley Intelligence Layer</span>.
           </p>
+        </motion.div>
+
+        {/* Filters */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="flex flex-wrap justify-center gap-2 mb-8 max-w-2xl"
+        >
+          {FILTERS.map(filter => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all ${
+                activeFilter === filter 
+                  ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400' 
+                  : 'bg-zinc-900/50 text-zinc-400 border border-zinc-800 hover:border-zinc-600 hover:text-zinc-200'
+              }`}
+            >
+              {filter}
+            </button>
+          ))}
         </motion.div>
 
         {/* Action Button */}
@@ -137,7 +195,12 @@ export default function App() {
             {loading ? (
               <SkeletonCard key="skeleton" />
             ) : recommendation && recommendation.malData ? (
-              <ResultCard key="result" recommendation={recommendation} />
+              <ResultCard 
+                key="result" 
+                recommendation={recommendation} 
+                isInArsenal={!!watchlist.find(item => item.malData.url === recommendation.malData.url)}
+                onToggleArsenal={() => toggleArsenal(recommendation)}
+              />
             ) : (
               <EmptyState key="empty" />
             )}
@@ -145,6 +208,17 @@ export default function App() {
         </div>
 
       </div>
+
+      {/* Arsenal Modal */}
+      <AnimatePresence>
+        {showArsenal && (
+          <ArsenalModal 
+            watchlist={watchlist} 
+            onClose={() => setShowArsenal(false)} 
+            onRemove={toggleArsenal}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -199,7 +273,7 @@ function SkeletonCard() {
   );
 }
 
-function ResultCard({ recommendation }: { recommendation: Recommendation, key?: string }) {
+function ResultCard({ recommendation, isInArsenal, onToggleArsenal, key }: { recommendation: Recommendation, isInArsenal: boolean, onToggleArsenal: () => void, key?: string }) {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
@@ -238,19 +312,29 @@ function ResultCard({ recommendation }: { recommendation: Recommendation, key?: 
         {/* Content Section */}
         <div className="w-full md:w-3/5 p-6 md:p-8 flex flex-col relative z-20">
           
-          {/* Tags */}
-          <div className="flex flex-wrap gap-2 mb-5">
-            {recommendation.tags.map((tag, i) => (
-              <motion.span 
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 + (i * 0.05) }}
-                key={tag}
-                className="px-3 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-widest bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 rounded-md shadow-[0_0_10px_rgba(99,102,241,0.1)]"
-              >
-                {tag}
-              </motion.span>
-            ))}
+          {/* Tags & Arsenal Button */}
+          <div className="flex justify-between items-start mb-5">
+            <div className="flex flex-wrap gap-2">
+              {recommendation.tags.map((tag, i) => (
+                <motion.span 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + (i * 0.05) }}
+                  key={tag}
+                  className="px-3 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-widest bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 rounded-md shadow-[0_0_10px_rgba(99,102,241,0.1)]"
+                >
+                  {tag}
+                </motion.span>
+              ))}
+            </div>
+            
+            <button 
+              onClick={onToggleArsenal}
+              className={`p-2 rounded-full border transition-all ${isInArsenal ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500'}`}
+              title={isInArsenal ? "Remove from Arsenal" : "Save to Arsenal"}
+            >
+              {isInArsenal ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+            </button>
           </div>
 
           {/* Title */}
@@ -328,3 +412,84 @@ function ResultCard({ recommendation }: { recommendation: Recommendation, key?: 
   );
 }
 
+function ArsenalModal({ watchlist, onClose, onRemove }: { watchlist: Recommendation[], onClose: () => void, onRemove: (rec: Recommendation) => void }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-sm"
+    >
+      <motion.div 
+        initial={{ scale: 0.95, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 20 }}
+        className="w-full max-w-4xl max-h-[85vh] bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-500/20 rounded-lg">
+              <Library className="w-6 h-6 text-indigo-400" />
+            </div>
+            <h2 className="text-2xl font-display font-bold text-white">Your Arsenal</h2>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {watchlist.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-zinc-500 py-12">
+              <Bookmark className="w-16 h-16 mb-4 opacity-20" />
+              <p className="text-lg font-display">Your Arsenal is empty.</p>
+              <p className="text-sm font-light mt-2">Save recommendations to build your watchlist.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {watchlist.map((rec) => (
+                <div key={rec.malData.url} className="flex gap-4 p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl group hover:border-indigo-500/30 transition-colors">
+                  <img 
+                    src={rec.malData.imageUrl} 
+                    alt={rec.title} 
+                    className="w-20 h-28 object-cover rounded-lg"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="flex-1 flex flex-col">
+                    <h3 className="font-bold text-zinc-200 line-clamp-2 mb-1">{rec.title}</h3>
+                    <div className="flex items-center gap-2 text-xs text-zinc-500 mb-auto">
+                      <span className="flex items-center gap-1"><Globe className="w-3 h-3 text-indigo-400"/> {rec.wbScore.toFixed(1)}</span>
+                      <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500"/> {rec.malData.score}</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <a 
+                        href={`https://aniwatchtv.to/search?keyword=${encodeURIComponent(rec.title)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                      >
+                        <PlayCircle className="w-3 h-3" /> Watch
+                      </a>
+                      <button 
+                        onClick={() => onRemove(rec)}
+                        className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors"
+                        title="Remove from Arsenal"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}

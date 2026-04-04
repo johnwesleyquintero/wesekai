@@ -30,10 +30,27 @@ const priorityQueries = [
   { genres: "73", q: "empire" } // Reincarnation + empire
 ];
 
-export async function fetchDynamicRecommendation(): Promise<AnimeData | null> {
+export async function fetchDynamicRecommendation(filter: string = 'All'): Promise<AnimeData | null> {
   try {
+    // Filter the priority queries based on the selected filter
+    let validQueries = priorityQueries;
+    if (filter !== 'All') {
+      validQueries = priorityQueries.filter(q => {
+        if (filter === 'Isekai') return q.genres?.includes('62');
+        if (filter === 'Fantasy') return q.genres?.includes('10');
+        if (filter === 'Sci-Fi') return q.genres?.includes('24');
+        if (filter === 'Military') return q.genres?.includes('38');
+        if (filter === 'Strategy') return q.genres?.includes('11');
+        if (filter === 'Reincarnation') return q.genres?.includes('73');
+        return true;
+      });
+    }
+    
+    // Fallback to all queries if none match (shouldn't happen with our current list, but safe)
+    if (validQueries.length === 0) validQueries = priorityQueries;
+
     // Randomize the selection of the priority query
-    const query = priorityQueries[Math.floor(Math.random() * priorityQueries.length)];
+    const query = validQueries[Math.floor(Math.random() * validQueries.length)];
     
     // Pick a random page from top 10 pages (up to 250 results) to ensure high diversity
     // rather than always relying on the top 100
