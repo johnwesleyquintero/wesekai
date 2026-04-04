@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Star, ExternalLink, Loader2, Swords, Globe, Cpu, Terminal, PlayCircle, Copy, Check, Bookmark, BookmarkCheck, Library, X, Trash2 } from 'lucide-react';
+import { Sparkles, Star, ExternalLink, Loader2, Swords, Globe, Cpu, Terminal, PlayCircle, Copy, Check, Bookmark, BookmarkCheck, Library, X, Trash2, Ban } from 'lucide-react';
 import { fetchTopAnimeList, AnimeData } from './lib/mal';
 import { calculateWorldBuildingScore } from './lib/scoring';
 
@@ -20,9 +20,13 @@ export default function App() {
   
   // v2 Features
   const [activeFilter, setActiveFilter] = useState('All');
-  const [showArsenal, setShowArsenal] = useState(false);
+  const [modalView, setModalView] = useState<'none' | 'arsenal' | 'dropped'>('none');
   const [watchlist, setWatchlist] = useState<Recommendation[]>(() => {
     const saved = localStorage.getItem('wesekai-arsenal');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [droppedList, setDroppedList] = useState<Recommendation[]>(() => {
+    const saved = localStorage.getItem('wesekai-dropped');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -30,6 +34,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('wesekai-arsenal', JSON.stringify(watchlist));
   }, [watchlist]);
+
+  // Sync Dropped to LocalStorage
+  useEffect(() => {
+    localStorage.setItem('wesekai-dropped', JSON.stringify(droppedList));
+  }, [droppedList]);
 
   // Update document title dynamically
   useEffect(() => {
@@ -78,14 +87,31 @@ export default function App() {
       }
       return [...prev, rec];
     });
+    // Remove from dropped if it's there
+    setDroppedList(prev => prev.filter(item => item.malData.url !== rec.malData.url));
   }, []);
 
-  // Filter out items already in the Arsenal and limit to 20
+  const toggleDropped = useCallback((rec: Recommendation) => {
+    setDroppedList(prev => {
+      const exists = prev.find(item => item.malData.url === rec.malData.url);
+      if (exists) {
+        return prev.filter(item => item.malData.url !== rec.malData.url);
+      }
+      return [...prev, rec];
+    });
+    // Remove from arsenal if it's there
+    setWatchlist(prev => prev.filter(item => item.malData.url !== rec.malData.url));
+  }, []);
+
+  // Filter out items already in the Arsenal or Dropped list and limit to 20
   const displayedRecommendations = useMemo(() => {
     return recommendations
-      .filter(rec => !watchlist.some(w => w.malData.url === rec.malData.url))
+      .filter(rec => 
+        !watchlist.some(w => w.malData.url === rec.malData.url) && 
+        !droppedList.some(d => d.malData.url === rec.malData.url)
+      )
       .slice(0, 20);
-  }, [recommendations, watchlist]);
+  }, [recommendations, watchlist, droppedList]);
 
   return (
     <div className="min-h-screen text-zinc-50 font-sans selection:bg-indigo-500/30 relative overflow-hidden">
@@ -93,13 +119,20 @@ export default function App() {
       <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none" />
       
       {/* Top Navigation */}
-      <div className="absolute top-6 right-6 z-50">
+      <div className="absolute top-6 right-6 z-50 flex gap-3">
         <button 
-          onClick={() => setShowArsenal(true)}
+          onClick={() => setModalView('dropped')}
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-full text-zinc-300 hover:text-white hover:border-red-500/50 transition-all backdrop-blur-md shadow-lg"
+        >
+          <Ban className="w-4 h-4 text-red-400" />
+          <span className="font-medium text-sm hidden sm:inline">Dropped ({droppedList.length})</span>
+        </button>
+        <button 
+          onClick={() => setModalView('arsenal')}
           className="flex items-center gap-2 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-full text-zinc-300 hover:text-white hover:border-indigo-500/50 transition-all backdrop-blur-md shadow-lg"
         >
           <Library className="w-4 h-4 text-indigo-400" />
-          <span className="font-medium text-sm">Arsenal ({watchlist.length})</span>
+          <span className="font-medium text-sm hidden sm:inline">Arsenal ({watchlist.length})</span>
         </button>
       </div>
 
@@ -217,7 +250,9 @@ export default function App() {
                     key={rec.malData.url} 
                     recommendation={rec} 
                     isInArsenal={false}
+                    isDropped={false}
                     onToggleArsenal={() => toggleArsenal(rec)}
+                    onToggleDropped={() => toggleDropped(rec)}
                   />
                 ))}
               </AnimatePresence>
@@ -229,13 +264,14 @@ export default function App() {
 
       </div>
 
-      {/* Arsenal Modal */}
+      {/* Modals */}
       <AnimatePresence>
-        {showArsenal && (
-          <ArsenalModal 
-            watchlist={watchlist} 
-            onClose={() => setShowArsenal(false)} 
-            onRemove={toggleArsenal}
+        {modalView !== 'none' && (
+          <AnimeListModal 
+            type={modalView}
+            watchlist={modalView === 'arsenal' ? watchlist : droppedList} 
+            onClose={() => setModalView('none')} 
+            onRemove={modalView === 'arsenal' ? toggleArsenal : toggleDropped}
           />
         )}
       </AnimatePresence>
@@ -293,7 +329,7 @@ function SkeletonCard() {
   );
 }
 
-const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolean, onToggleArsenal: () => void }> = React.memo(({ recommendation, isInArsenal, onToggleArsenal }) => {
+const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolean, isDropped: boolean, onToggleArsenal: () => void, onToggleDropped: () => void }> = React.memo(({ recommendation, isInArsenal, isDropped, onToggleArsenal, onToggleDropped }) => {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
@@ -335,7 +371,7 @@ const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolea
         {/* Content Section */}
         <div className="w-full md:w-3/5 p-6 md:p-8 flex flex-col relative z-20">
           
-          {/* Tags & Arsenal Button */}
+          {/* Tags & Action Buttons */}
           <div className="flex justify-between items-start mb-5">
             <div className="flex flex-wrap gap-2">
               {recommendation.tags.map((tag, i) => (
@@ -351,13 +387,22 @@ const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolea
               ))}
             </div>
             
-            <button 
-              onClick={onToggleArsenal}
-              className={`p-2 rounded-full border transition-all ${isInArsenal ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500'}`}
-              title={isInArsenal ? "Remove from Arsenal" : "Save to Arsenal"}
-            >
-              {isInArsenal ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
-            </button>
+            <div className="flex gap-2 shrink-0 ml-2">
+              <button 
+                onClick={onToggleDropped}
+                className={`p-2 rounded-full border transition-all ${isDropped ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500'}`}
+                title={isDropped ? "Remove from Dropped" : "Drop Anime"}
+              >
+                <Ban className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={onToggleArsenal}
+                className={`p-2 rounded-full border transition-all ${isInArsenal ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500'}`}
+                title={isInArsenal ? "Remove from Arsenal" : "Save to Arsenal"}
+              >
+                {isInArsenal ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
 
           {/* Title */}
@@ -435,7 +480,17 @@ const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolea
   );
 });
 
-function ArsenalModal({ watchlist, onClose, onRemove }: { watchlist: Recommendation[], onClose: () => void, onRemove: (rec: Recommendation) => void }) {
+function AnimeListModal({ type, watchlist, onClose, onRemove }: { type: 'arsenal' | 'dropped', watchlist: Recommendation[], onClose: () => void, onRemove: (rec: Recommendation) => void }) {
+  const isArsenal = type === 'arsenal';
+  const Icon = isArsenal ? Library : Ban;
+  const title = isArsenal ? "Your Arsenal" : "Dropped Anime";
+  const emptyMsg = isArsenal ? "Your Arsenal is empty." : "No dropped anime yet.";
+  const emptySub = isArsenal ? "Save recommendations to build your watchlist." : "Anime you drop will appear here.";
+  const themeColor = isArsenal ? "text-indigo-400" : "text-red-400";
+  const themeBg = isArsenal ? "bg-indigo-500/20" : "bg-red-500/20";
+  const hoverBorder = isArsenal ? "hover:border-indigo-500/30" : "hover:border-red-500/30";
+  const linkHover = isArsenal ? "hover:text-indigo-300" : "hover:text-red-300";
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -452,10 +507,10 @@ function ArsenalModal({ watchlist, onClose, onRemove }: { watchlist: Recommendat
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/20 rounded-lg">
-              <Library className="w-6 h-6 text-indigo-400" />
+            <div className={`p-2 ${themeBg} rounded-lg`}>
+              <Icon className={`w-6 h-6 ${themeColor}`} />
             </div>
-            <h2 className="text-2xl font-display font-bold text-white">Your Arsenal</h2>
+            <h2 className="text-2xl font-display font-bold text-white">{title}</h2>
           </div>
           <button 
             onClick={onClose}
@@ -469,14 +524,14 @@ function ArsenalModal({ watchlist, onClose, onRemove }: { watchlist: Recommendat
         <div className="flex-1 overflow-y-auto p-6">
           {watchlist.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-zinc-500 py-12">
-              <Bookmark className="w-16 h-16 mb-4 opacity-20" />
-              <p className="text-lg font-display">Your Arsenal is empty.</p>
-              <p className="text-sm font-light mt-2">Save recommendations to build your watchlist.</p>
+              <Icon className="w-16 h-16 mb-4 opacity-20" />
+              <p className="text-lg font-display">{emptyMsg}</p>
+              <p className="text-sm font-light mt-2">{emptySub}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {watchlist.map((rec) => (
-                <div key={rec.malData.url} className="flex gap-4 p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl group hover:border-indigo-500/30 transition-colors">
+                <div key={rec.malData.url} className={`flex gap-4 p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl group ${hoverBorder} transition-colors`}>
                   <img 
                     src={rec.malData.imageUrl} 
                     alt={rec.title} 
@@ -488,7 +543,7 @@ function ArsenalModal({ watchlist, onClose, onRemove }: { watchlist: Recommendat
                   <div className="flex-1 flex flex-col">
                     <h3 className="font-bold text-zinc-200 line-clamp-2 mb-1">{rec.title}</h3>
                     <div className="flex items-center gap-2 text-xs text-zinc-500 mb-auto">
-                      <span className="flex items-center gap-1"><Globe className="w-3 h-3 text-indigo-400"/> {rec.wbScore.toFixed(1)}</span>
+                      <span className="flex items-center gap-1"><Globe className={`w-3 h-3 ${themeColor}`}/> {rec.wbScore.toFixed(1)}</span>
                       <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500"/> {rec.malData.score}</span>
                     </div>
                     <div className="flex items-center justify-between mt-2">
@@ -496,14 +551,14 @@ function ArsenalModal({ watchlist, onClose, onRemove }: { watchlist: Recommendat
                         href={`https://aniwatchtv.to/search?keyword=${encodeURIComponent(rec.title)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                        className={`text-xs font-medium ${themeColor} ${linkHover} flex items-center gap-1`}
                       >
                         <PlayCircle className="w-3 h-3" /> Watch
                       </a>
                       <button 
                         onClick={() => onRemove(rec)}
                         className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors"
-                        title="Remove from Arsenal"
+                        title={`Remove from ${isArsenal ? 'Arsenal' : 'Dropped'}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

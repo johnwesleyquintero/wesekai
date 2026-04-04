@@ -29,6 +29,30 @@ const priorityQueries = [
   { genres: "73", q: "empire" } // Reincarnation + empire
 ];
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function fetchWithBackoff(url: string, maxRetries = 3, baseDelay = 1000): Promise<Response> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await fetch(url);
+    
+    // If successful or not a rate limit error, return the response immediately
+    if (response.status !== 429) {
+      return response;
+    }
+    
+    // If it's the last attempt, return the 429 response to be handled by the caller
+    if (attempt === maxRetries - 1) {
+      return response;
+    }
+    
+    // Calculate exponential backoff delay: baseDelay * 2^attempt
+    const waitTime = baseDelay * Math.pow(2, attempt);
+    console.warn(`Jikan API rate limited (429). Retrying in ${waitTime}ms... (Attempt ${attempt + 1} of ${maxRetries})`);
+    await delay(waitTime);
+  }
+  throw new Error("Max retries reached");
+}
+
 export async function fetchTopAnimeList(filter: string = 'All'): Promise<AnimeData[]> {
   try {
     // Filter the priority queries based on the selected filter
@@ -55,7 +79,7 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<AnimeDa
     if (query.genres) url += `&genres=${query.genres}`;
     if (query.q) url += `&q=${query.q}`;
 
-    const response = await fetch(url);
+    const response = await fetchWithBackoff(url);
     
     if (response.status === 429) {
       throw new Error("Intelligence Layer is cooling down. Please wait a few seconds before requesting again.");
