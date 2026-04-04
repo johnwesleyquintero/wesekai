@@ -28,37 +28,37 @@ export function AnimeListModal({ type, watchlist, onClose, onRemove }: { type: '
         className="w-full max-w-4xl max-h-[85vh] bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 ${themeBg} rounded-lg`}>
-              <Icon className={`w-6 h-6 ${themeColor}`} />
+        <div className="flex items-center justify-between p-8 border-b border-zinc-800">
+          <div className="flex items-center gap-4">
+            <div className={`p-3 ${themeBg} rounded-xl`}>
+              <Icon className={`w-7 h-7 ${themeColor}`} />
             </div>
-            <h2 className="text-2xl font-display font-bold text-white">{title}</h2>
+            <h2 className="text-3xl font-display font-bold text-white tracking-tight">{title}</h2>
           </div>
           <button 
             onClick={onClose}
-            className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors"
+            className="p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-8">
           {watchlist.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-zinc-500 py-12">
-              <Icon className="w-16 h-16 mb-4 opacity-20" />
-              <p className="text-lg font-display">{emptyMsg}</p>
-              <p className="text-sm font-light mt-2">{emptySub}</p>
+            <div className="h-full flex flex-col items-center justify-center text-zinc-500 py-16">
+              <Icon className="w-20 h-20 mb-6 opacity-20" />
+              <p className="text-xl font-display">{emptyMsg}</p>
+              <p className="text-base font-light mt-2">{emptySub}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {watchlist.map((rec) => (
-                <div key={rec.malData.url} className={`flex gap-4 p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl group ${hoverBorder} transition-colors`}>
+                <div key={rec.malData.url} className={`flex gap-5 p-5 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl group ${hoverBorder} transition-colors`}>
                   <img 
                     src={rec.malData.imageUrl} 
                     alt={rec.title} 
-                    className="w-20 h-28 object-cover rounded-lg"
+                    className="w-24 h-32 object-cover rounded-xl shadow-md"
                     referrerPolicy="no-referrer"
                     loading="lazy"
                     decoding="async"

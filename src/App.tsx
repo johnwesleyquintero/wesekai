@@ -273,7 +273,7 @@ export default function App() {
         watchlistCount={watchlist.length} 
       />
 
-      <div className="max-w-6xl mx-auto px-6 py-12 md:py-20 flex flex-col items-center relative z-10">
+      <div className="max-w-6xl mx-auto px-6 py-16 md:py-24 lg:py-32 flex flex-col items-center relative z-10">
         <Header />
         <FilterBar filters={FILTERS} activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
         <ErrorState error={error} />

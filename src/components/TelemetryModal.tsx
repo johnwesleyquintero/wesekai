@@ -27,36 +27,36 @@ export function TelemetryModal({ tagPreferences, sessionMemory, onClose }: { tag
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-indigo-500 to-purple-500" />
         
-        <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500/20 rounded-lg">
-              <Network className="w-6 h-6 text-emerald-400" />
+        <div className="p-8 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-500/20 rounded-xl">
+              <Network className="w-7 h-7 text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-xl font-display font-bold text-white tracking-wide">System Telemetry</h2>
-              <p className="text-xs text-zinc-400 uppercase tracking-widest mt-0.5">Live Taste Vector Analysis</p>
+              <h2 className="text-2xl font-display font-bold text-white tracking-tight">System Telemetry</h2>
+              <p className="text-sm text-zinc-400 uppercase tracking-widest mt-1">Live Taste Vector Analysis</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-8">
+        <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-10">
           
           {/* Top Level Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
-              <span className="text-3xl font-display font-bold text-emerald-400 mb-1">{(explorationPressure * 100).toFixed(0)}%</span>
-              <span className="text-xs text-zinc-500 uppercase tracking-widest">Exploration Pressure</span>
+          <div className="grid grid-cols-3 gap-6">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex flex-col items-center justify-center text-center">
+              <span className="text-4xl font-display font-bold text-emerald-400 mb-2">{(explorationPressure * 100).toFixed(0)}%</span>
+              <span className="text-xs text-zinc-500 uppercase tracking-widest font-medium">Exploration Pressure</span>
             </div>
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
-              <span className="text-3xl font-display font-bold text-indigo-400 mb-1">{coreOrbit.length}</span>
-              <span className="text-xs text-zinc-500 uppercase tracking-widest">Active Vectors</span>
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex flex-col items-center justify-center text-center">
+              <span className="text-4xl font-display font-bold text-indigo-400 mb-2">{coreOrbit.length}</span>
+              <span className="text-xs text-zinc-500 uppercase tracking-widest font-medium">Active Vectors</span>
             </div>
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
-              <span className="text-3xl font-display font-bold text-red-400 mb-1">{frozenBranches.length}</span>
-              <span className="text-xs text-zinc-500 uppercase tracking-widest">Frozen Branches</span>
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex flex-col items-center justify-center text-center">
+              <span className="text-4xl font-display font-bold text-red-400 mb-2">{frozenBranches.length}</span>
+              <span className="text-xs text-zinc-500 uppercase tracking-widest font-medium">Frozen Branches</span>
             </div>
           </div>
 

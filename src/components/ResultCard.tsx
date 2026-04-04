@@ -77,18 +77,18 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
         </div>
 
         {/* Content Section */}
-        <div className="w-full md:w-3/5 p-6 md:p-8 flex flex-col relative z-20">
+        <div className="w-full md:w-3/5 p-8 md:p-10 flex flex-col relative z-20">
           
           {/* Tags & Action Buttons */}
-          <div className="flex justify-between items-start mb-5">
-            <div className="flex flex-wrap gap-2">
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex flex-wrap gap-3">
               {recommendation.tags.map((tag, i) => (
                 <motion.span 
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 + (i * 0.05) }}
                   key={tag}
-                  className={`px-3 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-widest border rounded-md ${
+                  className={`px-3.5 py-1.5 text-xs sm:text-sm font-bold uppercase tracking-widest border rounded-md ${
                     recommendation.isElite 
                       ? 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.1)]' 
                       : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30 shadow-[0_0_10px_rgba(99,102,241,0.1)]'
@@ -99,24 +99,24 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
               ))}
             </div>
             
-            <div className="flex gap-2 shrink-0 ml-2">
+            <div className="flex gap-3 shrink-0 ml-4">
               <button 
                 onClick={handleDrop}
-                className="p-2 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-all"
+                className="p-3 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-all"
                 title="Drop Anime (Never show again)"
               >
                 <Ban className="w-5 h-5" />
               </button>
               <button 
                 onClick={handleSkip}
-                className="p-2 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-white hover:border-zinc-500 transition-all"
+                className="p-3 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-white hover:border-zinc-500 transition-all"
                 title="Skip for now"
               >
                 <FastForward className="w-5 h-5" />
               </button>
               <button 
                 onClick={handleWatch}
-                className="p-2 rounded-full border bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/40 hover:text-white transition-all shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                className="p-3 rounded-full border bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/40 hover:text-white transition-all shadow-[0_0_15px_rgba(99,102,241,0.2)]"
                 title="Save to Arsenal & Next"
               >
                 <Bookmark className="w-5 h-5" />
@@ -125,13 +125,13 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
           </div>
 
           {/* Title */}
-          <h2 className="font-display text-3xl md:text-4xl font-bold mb-6 leading-tight text-white drop-shadow-md">
+          <h2 className="font-display text-4xl md:text-5xl font-bold mb-8 leading-tight text-white drop-shadow-md">
             {recommendation.malData.title}
           </h2>
 
           {/* RPG Stats / Scores */}
-          <div className="flex flex-wrap items-center gap-4 mb-8">
-            <div className="flex items-center gap-3 bg-zinc-950/50 border border-zinc-800 rounded-xl p-3 shadow-inner relative group/score cursor-help">
+          <div className="flex flex-wrap items-center gap-5 mb-10">
+            <div className="flex items-center gap-4 bg-zinc-950/50 border border-zinc-800 rounded-xl p-4 shadow-inner relative group/score cursor-help">
               <div className="p-2 bg-indigo-500/20 rounded-lg">
                 <Globe className="w-5 h-5 text-indigo-400" />
               </div>
@@ -158,7 +158,7 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
               </div>
             </div>
 
-            <div className="flex items-center gap-3 bg-zinc-950/50 border border-zinc-800 rounded-xl p-3 shadow-inner">
+            <div className="flex items-center gap-4 bg-zinc-950/50 border border-zinc-800 rounded-xl p-4 shadow-inner">
               <div className="p-2 bg-yellow-500/20 rounded-lg">
                 <Star className="w-5 h-5 text-yellow-500" />
               </div>
@@ -173,14 +173,14 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
           </div>
 
           {/* Synopsis */}
-          <div className="prose prose-invert prose-zinc max-w-none mb-8">
-            <p className="text-zinc-400 leading-relaxed text-sm md:text-base line-clamp-6 md:line-clamp-none font-light">
+          <div className="prose prose-invert prose-zinc max-w-none mb-10">
+            <p className="text-zinc-400 leading-relaxed text-base md:text-lg line-clamp-6 md:line-clamp-none font-light">
               {recommendation.malData.synopsis}
             </p>
           </div>
 
           {/* Footer Link */}
-          <div className="mt-auto pt-6 border-t border-zinc-800/60 flex flex-wrap items-center gap-6">
+          <div className="mt-auto pt-8 border-t border-zinc-800/60 flex flex-wrap items-center gap-6">
             <a 
               href={recommendation.malData.url}
               target="_blank"
