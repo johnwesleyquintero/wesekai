@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Cpu, Terminal, Library, Ban, Activity } from 'lucide-react';
+import { AnimatePresence } from 'motion/react';
 import { fetchTopAnimeList } from './lib/mal';
 import { calculateWorldBuildingScore } from './lib/scoring';
 import { ELITE_ANIME } from './lib/elite';
 import { Recommendation } from './types';
-import { EmptyState } from './components/EmptyState';
-import { SkeletonCard } from './components/SkeletonCard';
-import { ResultCard } from './components/ResultCard';
 import { TelemetryModal } from './components/TelemetryModal';
 import { AnimeListModal } from './components/AnimeListModal';
+import { TopNavigation } from './components/TopNavigation';
+import { Header } from './components/Header';
+import { FilterBar } from './components/FilterBar';
+import { ErrorState } from './components/ErrorState';
+import { RecommendationArea } from './components/RecommendationArea';
 
 const FILTERS = ['All', 'Isekai', 'Fantasy', 'Military', 'Strategy', 'Reincarnation'];
 
@@ -266,135 +267,25 @@ export default function App() {
       {/* Ambient Background Glow */}
       <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none" />
       
-      {/* Top Navigation */}
-      <div className="absolute top-6 right-6 z-50 flex gap-3">
-        <button 
-          onClick={() => setModalView('telemetry')}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-full text-zinc-300 hover:text-white hover:border-emerald-500/50 transition-all backdrop-blur-md shadow-lg"
-        >
-          <Activity className="w-4 h-4 text-emerald-400" />
-          <span className="font-medium text-sm hidden sm:inline">Telemetry</span>
-        </button>
-        <button 
-          onClick={() => setModalView('dropped')}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-full text-zinc-300 hover:text-white hover:border-red-500/50 transition-all backdrop-blur-md shadow-lg"
-        >
-          <Ban className="w-4 h-4 text-red-400" />
-          <span className="font-medium text-sm hidden sm:inline">Dropped ({droppedList.length})</span>
-        </button>
-        <button 
-          onClick={() => setModalView('arsenal')}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-900/80 border border-zinc-800 rounded-full text-zinc-300 hover:text-white hover:border-indigo-500/50 transition-all backdrop-blur-md shadow-lg"
-        >
-          <Library className="w-4 h-4 text-indigo-400" />
-          <span className="font-medium text-sm hidden sm:inline">Arsenal ({watchlist.length})</span>
-        </button>
-      </div>
+      <TopNavigation 
+        setModalView={setModalView} 
+        droppedCount={droppedList.length} 
+        watchlistCount={watchlist.length} 
+      />
 
       <div className="max-w-6xl mx-auto px-6 py-12 md:py-20 flex flex-col items-center relative z-10">
-        
-        {/* System Status Indicator */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium tracking-widest uppercase mb-8 backdrop-blur-sm shadow-[0_0_15px_rgba(79,70,229,0.15)]"
-        >
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-          </span>
-          Intelligence Layer Online
-        </motion.div>
-
-        {/* Header */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
-          className="text-center mb-10"
-        >
-          <h1 className="font-display text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent drop-shadow-sm">
-            WESEKAI
-          </h1>
-          <p className="text-zinc-400 text-lg md:text-xl max-w-lg mx-auto font-light">
-            Dynamic isekai recommendations powered by the <span className="text-indigo-300 font-medium">Wesley Intelligence Layer</span>.
-          </p>
-        </motion.div>
-
-        {/* Filters */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="flex flex-wrap justify-center gap-2 mb-8 max-w-2xl"
-        >
-          {FILTERS.map(filter => (
-            <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all ${
-                activeFilter === filter 
-                  ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400' 
-                  : 'bg-zinc-900/50 text-zinc-400 border border-zinc-800 hover:border-zinc-600 hover:text-zinc-200'
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
-        </motion.div>
-
-        {/* Action Button - Removed for Omakase Flow */}
-        {/* The system auto-fetches when the pool is exhausted. */}
-
-        {/* Error State */}
-        <AnimatePresence mode="wait">
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="w-full max-w-2xl overflow-hidden mb-8"
-            >
-              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-center flex items-center justify-center gap-2">
-                <Terminal className="w-5 h-5" />
-                {error}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Content Area */}
-        <div className="w-full relative min-h-[500px] flex justify-center items-start mt-8">
-          {loading && !currentRec ? (
-            <div className="w-full max-w-4xl">
-              <SkeletonCard />
-            </div>
-          ) : currentRec ? (
-            <div className="w-full max-w-4xl">
-              <AnimatePresence mode="wait">
-                <ResultCard 
-                  key={currentRec.malData.url} 
-                  recommendation={currentRec} 
-                  onWatch={() => handleWatch(currentRec)}
-                  onSkip={() => handleSkip(currentRec)}
-                  onDrop={() => handleDrop(currentRec)}
-                />
-              </AnimatePresence>
-            </div>
-          ) : (!loading && candidatePool.length > 0) || isThinking ? (
-            <div className="text-zinc-400 text-center flex flex-col items-center justify-center min-h-[400px]">
-              <motion.div
-                animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <Cpu className="w-10 h-10 text-indigo-500 mb-4" />
-              </motion.div>
-              <p className="font-display tracking-widest uppercase text-sm text-indigo-300/70">Synthesizing Taste Profile...</p>
-            </div>
-          ) : (
-            <EmptyState key="empty" />
-          )}
-        </div>
+        <Header />
+        <FilterBar filters={FILTERS} activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+        <ErrorState error={error} />
+        <RecommendationArea 
+          loading={loading}
+          currentRec={currentRec}
+          candidatePoolLength={candidatePool.length}
+          isThinking={isThinking}
+          handleWatch={handleWatch}
+          handleSkip={handleSkip}
+          handleDrop={handleDrop}
+        />
       </div>
 
       {/* Modals */}
