@@ -8,7 +8,7 @@ export interface AnimeData {
 }
 
 // Priority MAL Genre IDs:
-// 62: Isekai, 73: Reincarnation, 38: Military, 11: Strategy Game, 10: Fantasy, 24: Sci-Fi
+// 62: Isekai, 73: Reincarnation, 38: Military, 11: Strategy Game, 10: Fantasy
 const priorityQueries = [
   { genres: "62" }, // Isekai
   { genres: "73" }, // Reincarnation
@@ -25,7 +25,6 @@ const priorityQueries = [
   { genres: "62", q: "management" }, // Isekai + management
   { genres: "62", q: "crafting" }, // Isekai + crafting
   { genres: "10", q: "civilization" }, // Fantasy + civilization
-  { genres: "24,38" }, // Sci-Fi + Military
   { genres: "62", q: "diplomacy" }, // Isekai + diplomacy
   { genres: "73", q: "empire" } // Reincarnation + empire
 ];
@@ -38,7 +37,6 @@ export async function fetchDynamicRecommendation(filter: string = 'All'): Promis
       validQueries = priorityQueries.filter(q => {
         if (filter === 'Isekai') return q.genres?.includes('62');
         if (filter === 'Fantasy') return q.genres?.includes('10');
-        if (filter === 'Sci-Fi') return q.genres?.includes('24');
         if (filter === 'Military') return q.genres?.includes('38');
         if (filter === 'Strategy') return q.genres?.includes('11');
         if (filter === 'Reincarnation') return q.genres?.includes('73');
@@ -89,7 +87,6 @@ export async function fetchDynamicRecommendation(filter: string = 'All'): Promis
         if (g.name === 'Military') tags.add('military');
         if (g.name === 'Strategy Game') tags.add('strategy');
         if (g.name === 'Fantasy') tags.add('fantasy');
-        if (g.name === 'Sci-Fi') tags.add('science');
       });
       
       anime.themes?.forEach((t: any) => {

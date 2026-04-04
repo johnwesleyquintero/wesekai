@@ -11,7 +11,7 @@ interface Recommendation {
   wbScore: number;
 }
 
-const FILTERS = ['All', 'Isekai', 'Fantasy', 'Sci-Fi', 'Military', 'Strategy', 'Reincarnation'];
+const FILTERS = ['All', 'Isekai', 'Fantasy', 'Military', 'Strategy', 'Reincarnation'];
 
 export default function App() {
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
