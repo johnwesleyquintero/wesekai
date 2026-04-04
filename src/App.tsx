@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Star, ExternalLink, Loader2, Swords, Globe, Cpu, Terminal, PlayCircle, Copy, Check, Bookmark, BookmarkCheck, Library, X, Trash2 } from 'lucide-react';
-import { fetchDynamicRecommendation, AnimeData } from './lib/mal';
+import { fetchTopAnimeList, AnimeData } from './lib/mal';
 import { calculateWorldBuildingScore } from './lib/scoring';
 
 interface Recommendation {
@@ -14,7 +14,7 @@ interface Recommendation {
 const FILTERS = ['All', 'Isekai', 'Fantasy', 'Military', 'Strategy', 'Reincarnation'];
 
 export default function App() {
-  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -33,38 +33,42 @@ export default function App() {
 
   // Update document title dynamically
   useEffect(() => {
-    if (recommendation) {
-      document.title = `${recommendation.title} | WESEKAI`;
-    } else {
-      document.title = 'WESEKAI | Intelligence Layer';
-    }
-  }, [recommendation]);
+    document.title = 'WESEKAI | Intelligence Layer';
+  }, []);
 
-  const handleRecommend = async () => {
+  const fetchRecommendations = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const animeData = await fetchDynamicRecommendation(activeFilter);
+      const animeList = await fetchTopAnimeList(activeFilter);
 
-      if (!animeData) {
+      if (!animeList || animeList.length === 0) {
         throw new Error("Could not fetch data from MyAnimeList. Please try again.");
       }
 
-      const wbScore = calculateWorldBuildingScore(animeData.tags);
-
-      setRecommendation({
+      const recs = animeList.map(animeData => ({
         title: animeData.title,
         tags: animeData.tags,
         malData: animeData,
-        wbScore
-      });
+        wbScore: calculateWorldBuildingScore(animeData.tags)
+      }));
+
+      // Deduplicate by URL to prevent React key collisions
+      const uniqueRecs = Array.from(new Map(recs.map(item => [item.malData.url, item])).values());
+
+      setRecommendations(uniqueRecs);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred.");
     } finally {
       setLoading(false);
     }
   };
+
+  // Fetch on mount and when filter changes
+  useEffect(() => {
+    fetchRecommendations();
+  }, [activeFilter]);
 
   const toggleArsenal = (rec: Recommendation) => {
     setWatchlist(prev => {
@@ -75,6 +79,11 @@ export default function App() {
       return [...prev, rec];
     });
   };
+
+  // Filter out items already in the Arsenal and limit to 20
+  const displayedRecommendations = recommendations
+    .filter(rec => !watchlist.some(w => w.malData.url === rec.malData.url))
+    .slice(0, 20);
 
   return (
     <div className="min-h-screen text-zinc-50 font-sans selection:bg-indigo-500/30 relative overflow-hidden">
@@ -92,7 +101,7 @@ export default function App() {
         </button>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-12 md:py-20 flex flex-col items-center relative z-10">
+      <div className="max-w-6xl mx-auto px-6 py-12 md:py-20 flex flex-col items-center relative z-10">
         
         {/* System Status Indicator */}
         <motion.div 
@@ -151,7 +160,7 @@ export default function App() {
           transition={{ delay: 0.2 }}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={handleRecommend}
+          onClick={fetchRecommendations}
           disabled={loading}
           className="relative group overflow-hidden rounded-2xl bg-zinc-900 border border-indigo-500/30 px-8 py-4 font-display font-semibold text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.3)] transition-all hover:shadow-[0_0_60px_-15px_rgba(79,70,229,0.6)] hover:border-indigo-400/50 disabled:opacity-70 disabled:cursor-not-allowed mb-16"
         >
@@ -161,12 +170,12 @@ export default function App() {
             {loading ? (
               <>
                 <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
-                Processing Query...
+                Scanning Layer...
               </>
             ) : (
               <>
                 <Cpu className="w-6 h-6 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
-                Initialize Sequence
+                Scan for More
               </>
             )}
           </span>
@@ -191,20 +200,29 @@ export default function App() {
 
         {/* Content Area */}
         <div className="w-full relative min-h-[400px] flex justify-center">
-          <AnimatePresence mode="wait">
-            {loading ? (
-              <SkeletonCard key="skeleton" />
-            ) : recommendation && recommendation.malData ? (
-              <ResultCard 
-                key="result" 
-                recommendation={recommendation} 
-                isInArsenal={!!watchlist.find(item => item.malData.url === recommendation.malData.url)}
-                onToggleArsenal={() => toggleArsenal(recommendation)}
-              />
-            ) : (
-              <EmptyState key="empty" />
-            )}
-          </AnimatePresence>
+          {loading ? (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full">
+              <SkeletonCard key="skel1" />
+              <SkeletonCard key="skel2" />
+              <SkeletonCard key="skel3" />
+              <SkeletonCard key="skel4" />
+            </div>
+          ) : displayedRecommendations.length > 0 ? (
+            <motion.div layout className="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full">
+              <AnimatePresence>
+                {displayedRecommendations.map(rec => (
+                  <ResultCard 
+                    key={rec.malData.url} 
+                    recommendation={rec} 
+                    isInArsenal={false}
+                    onToggleArsenal={() => toggleArsenal(rec)}
+                  />
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          ) : (
+            <EmptyState key="empty" />
+          )}
         </div>
 
       </div>
@@ -234,7 +252,7 @@ function EmptyState() {
       className="w-full max-w-2xl border-2 border-dashed border-zinc-800/50 rounded-3xl p-12 flex flex-col items-center justify-center text-zinc-500 bg-zinc-900/20 backdrop-blur-sm"
     >
       <Swords className="w-12 h-12 mb-4 opacity-20" />
-      <p className="font-display text-lg">Awaiting command input...</p>
+      <p className="font-display text-lg text-center">No new recommendations found for this filter.<br/>Try refreshing or changing the filter.</p>
     </motion.div>
   );
 }
@@ -245,7 +263,7 @@ function SkeletonCard() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="w-full bg-zinc-900/40 border border-zinc-800/50 rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl flex flex-col md:flex-row"
+      className="w-full h-full bg-zinc-900/40 border border-zinc-800/50 rounded-3xl overflow-hidden backdrop-blur-xl shadow-2xl flex flex-col md:flex-row"
     >
       <div className="w-full md:w-2/5 aspect-[3/4] md:aspect-auto bg-zinc-800/50 animate-pulse" />
       <div className="w-full md:w-3/5 p-6 md:p-8 flex flex-col gap-4">
@@ -273,7 +291,7 @@ function SkeletonCard() {
   );
 }
 
-function ResultCard({ recommendation, isInArsenal, onToggleArsenal, key }: { recommendation: Recommendation, isInArsenal: boolean, onToggleArsenal: () => void, key?: string }) {
+const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolean, onToggleArsenal: () => void }> = ({ recommendation, isInArsenal, onToggleArsenal }) => {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
@@ -284,16 +302,17 @@ function ResultCard({ recommendation, isInArsenal, onToggleArsenal, key }: { rec
 
   return (
     <motion.div
+      layout
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -20, scale: 0.95 }}
-      transition={{ duration: 0.5, type: "spring", bounce: 0.3 }}
-      className="w-full relative group"
+      exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="w-full relative group h-full"
     >
       {/* Animated Glow Behind Card */}
       <div className="absolute -inset-0.5 bg-gradient-to-br from-indigo-500/30 to-purple-600/30 rounded-[2rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
       
-      <div className="relative w-full bg-zinc-900/80 border border-zinc-700/50 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl flex flex-col md:flex-row">
+      <div className="relative w-full h-full bg-zinc-900/80 border border-zinc-700/50 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl flex flex-col md:flex-row">
         
         {/* Image Section */}
         <div className="w-full md:w-2/5 relative aspect-[3/4] md:aspect-auto overflow-hidden">
