@@ -48,6 +48,11 @@ export async function fetchDynamicRecommendation(): Promise<AnimeData | null> {
     if (query.q) url += `&q=${query.q}`;
 
     const response = await fetch(url);
+    
+    if (response.status === 429) {
+      throw new Error("Intelligence Layer is cooling down. Please wait a few seconds before requesting again.");
+    }
+    
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Star, ExternalLink, Loader2, Swords, Globe, Cpu, Terminal, PlayCircle } from 'lucide-react';
+import { Sparkles, Star, ExternalLink, Loader2, Swords, Globe, Cpu, Terminal, PlayCircle, Copy, Check } from 'lucide-react';
 import { fetchDynamicRecommendation, AnimeData } from './lib/mal';
 import { calculateWorldBuildingScore } from './lib/scoring';
 
@@ -15,6 +15,15 @@ export default function App() {
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Update document title dynamically
+  useEffect(() => {
+    if (recommendation) {
+      document.title = `${recommendation.title} | WESEKAI`;
+    } else {
+      document.title = 'WESEKAI | Intelligence Layer';
+    }
+  }, [recommendation]);
 
   const handleRecommend = async () => {
     setLoading(true);
@@ -191,6 +200,14 @@ function SkeletonCard() {
 }
 
 function ResultCard({ recommendation }: { recommendation: Recommendation, key?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(recommendation.title);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -297,6 +314,13 @@ function ResultCard({ recommendation }: { recommendation: Recommendation, key?: 
               <PlayCircle className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
               Check Anime
             </a>
+            <button 
+              onClick={copyToClipboard}
+              className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-emerald-400 transition-colors ml-auto"
+            >
+              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 group-hover/link:scale-110 transition-transform" />}
+              {copied ? <span className="text-emerald-400">Copied!</span> : 'Copy Title'}
+            </button>
           </div>
         </div>
       </div>
