@@ -1,14 +1,23 @@
-import React from 'react';
-import { motion } from 'motion/react';
-import { Network, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Network, X, AlertTriangle, RefreshCw } from 'lucide-react';
 
 export function TelemetryModal({ tagPreferences, sessionMemory, onClose }: { tagPreferences: Record<string, number>, sessionMemory: { shown: Record<string, number>, skipped: Set<string> }, onClose: () => void }) {
+  const [showConfirmReset, setShowConfirmReset] = useState(false);
+
   const sortedTags = Object.entries(tagPreferences).sort((a, b) => b[1] - a[1]);
   const coreOrbit = sortedTags.filter(t => t[1] > 0);
   const frozenBranches = sortedTags.filter(t => t[1] < 0).reverse();
 
   const maxWeight = coreOrbit.length > 0 ? coreOrbit[0][1] : 0;
   const explorationPressure = Math.max(0.1, 1 - (maxWeight / 3)); // Decays as max weight approaches 3
+
+  const handleReset = () => {
+    localStorage.removeItem('wesekai_arsenal');
+    localStorage.removeItem('wesekai_dropped');
+    localStorage.removeItem('wesekai_memory');
+    window.location.reload();
+  };
 
   return (
     <motion.div
@@ -110,6 +119,55 @@ export function TelemetryModal({ tagPreferences, sessionMemory, onClose }: { tag
                 ))}
               </div>
             )}
+          </div>
+
+          {/* System Reboot */}
+          <div className="pt-8 border-t border-zinc-800/60 mt-8">
+            <AnimatePresence mode="wait">
+              {!showConfirmReset ? (
+                <motion.button
+                  key="reset-btn"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowConfirmReset(true)}
+                  className="w-full py-4 rounded-2xl border border-red-500/20 bg-red-500/5 text-red-400 font-medium hover:bg-red-500/10 hover:border-red-500/40 transition-all flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Reboot Intelligence Layer (Wipe Memory)
+                </motion.button>
+              ) : (
+                <motion.div
+                  key="confirm-reset"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="w-full p-4 rounded-2xl border border-red-500 bg-red-500/10 flex flex-col items-center text-center gap-4"
+                >
+                  <div className="flex items-center gap-2 text-red-400 font-bold">
+                    <AlertTriangle className="w-5 h-5" />
+                    CRITICAL WARNING
+                  </div>
+                  <p className="text-sm text-red-200/80">
+                    This will permanently delete your Arsenal, Dropped list, and completely wipe the taste vector memory. The system will restart from zero.
+                  </p>
+                  <div className="flex gap-3 w-full">
+                    <button 
+                      onClick={() => setShowConfirmReset(false)}
+                      className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors text-sm font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleReset}
+                      className="flex-1 py-2.5 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors text-sm font-bold shadow-[0_0_15px_rgba(239,68,68,0.4)]"
+                    >
+                      Confirm Wipe
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
         </div>
