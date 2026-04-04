@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Star, ExternalLink, Loader2, Swords, Globe, Cpu, Terminal, PlayCircle, Copy, Check, Bookmark, BookmarkCheck, Library, X, Trash2 } from 'lucide-react';
 import { fetchTopAnimeList, AnimeData } from './lib/mal';
@@ -70,7 +70,7 @@ export default function App() {
     fetchRecommendations();
   }, [activeFilter]);
 
-  const toggleArsenal = (rec: Recommendation) => {
+  const toggleArsenal = useCallback((rec: Recommendation) => {
     setWatchlist(prev => {
       const exists = prev.find(item => item.malData.url === rec.malData.url);
       if (exists) {
@@ -78,12 +78,14 @@ export default function App() {
       }
       return [...prev, rec];
     });
-  };
+  }, []);
 
   // Filter out items already in the Arsenal and limit to 20
-  const displayedRecommendations = recommendations
-    .filter(rec => !watchlist.some(w => w.malData.url === rec.malData.url))
-    .slice(0, 20);
+  const displayedRecommendations = useMemo(() => {
+    return recommendations
+      .filter(rec => !watchlist.some(w => w.malData.url === rec.malData.url))
+      .slice(0, 20);
+  }, [recommendations, watchlist]);
 
   return (
     <div className="min-h-screen text-zinc-50 font-sans selection:bg-indigo-500/30 relative overflow-hidden">
@@ -291,7 +293,7 @@ function SkeletonCard() {
   );
 }
 
-const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolean, onToggleArsenal: () => void }> = ({ recommendation, isInArsenal, onToggleArsenal }) => {
+const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolean, onToggleArsenal: () => void }> = React.memo(({ recommendation, isInArsenal, onToggleArsenal }) => {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
@@ -325,6 +327,8 @@ const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolea
             alt={recommendation.malData.title}
             className="absolute inset-0 w-full h-full object-cover"
             referrerPolicy="no-referrer"
+            loading="lazy"
+            decoding="async"
           />
         </div>
 
@@ -429,7 +433,7 @@ const ResultCard: React.FC<{ recommendation: Recommendation, isInArsenal: boolea
       </div>
     </motion.div>
   );
-}
+});
 
 function ArsenalModal({ watchlist, onClose, onRemove }: { watchlist: Recommendation[], onClose: () => void, onRemove: (rec: Recommendation) => void }) {
   return (
@@ -478,6 +482,8 @@ function ArsenalModal({ watchlist, onClose, onRemove }: { watchlist: Recommendat
                     alt={rec.title} 
                     className="w-20 h-28 object-cover rounded-lg"
                     referrerPolicy="no-referrer"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="flex-1 flex flex-col">
                     <h3 className="font-bold text-zinc-200 line-clamp-2 mb-1">{rec.title}</h3>
