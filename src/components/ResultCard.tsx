@@ -78,11 +78,11 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
         </div>
 
         {/* Content Section */}
-        <div className="w-full md:w-3/5 p-8 md:p-10 flex flex-col relative z-20">
+        <div className="w-full md:w-3/5 p-6 sm:p-8 md:p-10 flex flex-col relative z-20">
           
           {/* Tags & Action Buttons */}
-          <div className="flex justify-between items-start mb-6">
-            <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col-reverse sm:flex-row justify-between items-start gap-6 sm:gap-4 mb-6">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {recommendation.tags.map((tag, i) => (
                 <motion.span 
                   initial={{ opacity: 0, x: -10 }}
@@ -100,38 +100,38 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
               ))}
             </div>
             
-            <div className="flex gap-3 shrink-0 ml-4">
+            <div className="flex gap-2 sm:gap-3 shrink-0 self-end sm:self-auto sm:ml-4">
               <button 
                 onClick={handleDrop}
-                className="p-3 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-all"
+                className="p-2.5 sm:p-3 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-all"
                 title="Drop Anime (Never show again)"
               >
-                <Ban className="w-5 h-5" />
+                <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
               <button 
                 onClick={handleSkip}
-                className="p-3 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-white hover:border-zinc-500 transition-all"
+                className="p-2.5 sm:p-3 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-white hover:border-zinc-500 transition-all"
                 title="Skip for now"
               >
-                <FastForward className="w-5 h-5" />
+                <FastForward className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
               <button 
                 onClick={handleWatch}
-                className="p-3 rounded-full border bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/40 hover:text-white transition-all shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                className="p-2.5 sm:p-3 rounded-full border bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/40 hover:text-white transition-all shadow-[0_0_15px_rgba(99,102,241,0.2)]"
                 title="Save to Arsenal & Next"
               >
-                <Bookmark className="w-5 h-5" />
+                <Bookmark className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>
 
           {/* Title */}
-          <h2 className="font-display text-4xl md:text-5xl font-bold mb-8 leading-tight text-white drop-shadow-md">
+          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 leading-tight text-white drop-shadow-md">
             {recommendation.contentData.title}
           </h2>
 
           {/* RPG Stats / Scores */}
-          <div className="flex flex-wrap items-center gap-5 mb-10">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-5 mb-8 sm:mb-10">
             <div className="flex items-center gap-4 bg-zinc-950/50 border border-zinc-800 rounded-xl p-4 shadow-inner relative group/score cursor-help">
               <div className="p-2 bg-indigo-500/20 rounded-lg">
                 <Globe className="w-5 h-5 text-indigo-400" />
@@ -174,15 +174,15 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
           </div>
 
           {/* Synopsis */}
-          <div className="prose prose-invert prose-zinc max-w-none mb-10">
-            <p className="text-zinc-400 leading-relaxed text-base md:text-lg line-clamp-6 md:line-clamp-none font-light">
+          <div className="prose prose-invert prose-zinc max-w-none mb-8 sm:mb-10">
+            <p className="text-zinc-400 leading-relaxed text-sm sm:text-base md:text-lg line-clamp-6 md:line-clamp-none font-light">
               {recommendation.contentData.synopsis}
             </p>
           </div>
 
           {/* Footer Link */}
-          <div className="mt-auto pt-8 border-t border-zinc-800/60 flex flex-wrap items-center justify-between gap-6">
-            <div className="flex flex-wrap items-center gap-4 md:gap-6">
+          <div className="mt-auto pt-6 sm:pt-8 border-t border-zinc-800/60 flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-6">
+            <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4 md:gap-6">
               <a 
                 href={recommendation.contentData.url}
                 target="_blank"
