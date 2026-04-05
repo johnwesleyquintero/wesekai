@@ -122,7 +122,11 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<AnimeDa
       const filteredData = allAnime.filter((anime: any) => {
         const hasBannedGenre = anime.genres?.some((g: any) => WESEKAI_CONSTANTS.BANNED_GENRES.includes(g.name));
         const hasBannedTheme = anime.themes?.some((t: any) => WESEKAI_CONSTANTS.BANNED_GENRES.includes(t.name));
-        return !hasBannedGenre && !hasBannedTheme;
+        
+        const titleLower = (anime.title_english || anime.title || "").toLowerCase();
+        const hasBannedTitle = WESEKAI_CONSTANTS.BANNED_TITLE_KEYWORDS.some(kw => titleLower.includes(kw));
+
+        return !hasBannedGenre && !hasBannedTheme && !hasBannedTitle;
       });
 
       return filteredData.map((anime: any) => {
