@@ -5,18 +5,25 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function fetchWithBackoff(url: string, options: RequestInit, maxRetries = 3, baseDelay = 1000): Promise<Response> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const response = await fetch(url, options);
-    
-    if (response.status !== 429) {
-      return response;
-    }
-    
-    if (attempt === maxRetries - 1) {
-      return response;
+    try {
+      const response = await fetch(url, options);
+      
+      if (response.status !== 429 && response.status < 500) {
+        return response;
+      }
+      
+      if (attempt === maxRetries - 1) {
+        return response;
+      }
+    } catch (err) {
+      if (attempt === maxRetries - 1) {
+        throw err;
+      }
+      console.warn(`Network error. Retrying... (Attempt ${attempt + 1} of ${maxRetries})`, err);
     }
     
     const waitTime = baseDelay * Math.pow(2, attempt);
-    console.warn(`AniList API rate limited (429). Retrying in ${waitTime}ms... (Attempt ${attempt + 1} of ${maxRetries})`);
+    console.warn(`AniList API rate limited or server error. Retrying in ${waitTime}ms... (Attempt ${attempt + 1} of ${maxRetries})`);
     await delay(waitTime);
   }
   throw new Error("Max retries reached");

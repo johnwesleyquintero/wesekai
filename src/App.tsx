@@ -124,14 +124,20 @@ export default function App() {
         };
       });
 
-      // 2. Fetch from APIs (Anime + Manhwa)
+      // 2. Fetch from APIs (Anime + Manhwa) with graceful fallback
       const [animeList, manhwaList] = await Promise.all([
-        fetchTopAnimeList(activeFilter),
-        fetchTopManhwa(activeFilter)
+        fetchTopAnimeList(activeFilter).catch(err => {
+          console.warn("Anime API failed, falling back:", err);
+          return [] as UnifiedContent[];
+        }),
+        fetchTopManhwa(activeFilter).catch(err => {
+          console.warn("Manhwa API failed, falling back:", err);
+          return [] as UnifiedContent[];
+        })
       ]);
 
-      if ((!animeList || animeList.length === 0) && (!manhwaList || manhwaList.length === 0)) {
-        throw new Error("Could not fetch data from sources. Please try again.");
+      if (eliteRecs.length === 0 && animeList.length === 0 && manhwaList.length === 0) {
+        throw new Error("Could not fetch data from sources, and no Elite Anime matched your filter. Please try again later.");
       }
 
       const apiRecs = [...animeList, ...manhwaList].map(contentData => {

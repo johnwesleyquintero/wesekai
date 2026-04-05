@@ -27,21 +27,29 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function fetchWithBackoff(url: string, maxRetries = 3, baseDelay = 1000): Promise<Response> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const response = await fetch(url);
-    
-    // If successful or not a rate limit error, return the response immediately
-    if (response.status !== 429) {
-      return response;
-    }
-    
-    // If it's the last attempt, return the 429 response to be handled by the caller
-    if (attempt === maxRetries - 1) {
-      return response;
+    try {
+      const response = await fetch(url);
+      
+      // If successful or not a rate limit/server error, return the response immediately
+      if (response.status !== 429 && response.status < 500) {
+        return response;
+      }
+      
+      // If it's the last attempt, return the response to be handled by the caller
+      if (attempt === maxRetries - 1) {
+        return response;
+      }
+    } catch (err) {
+      // Catch network errors (e.g. offline, DNS failure)
+      if (attempt === maxRetries - 1) {
+        throw err;
+      }
+      console.warn(`Network error. Retrying... (Attempt ${attempt + 1} of ${maxRetries})`, err);
     }
     
     // Calculate exponential backoff delay: baseDelay * 2^attempt
     const waitTime = baseDelay * Math.pow(2, attempt);
-    console.warn(`Jikan API rate limited (429). Retrying in ${waitTime}ms... (Attempt ${attempt + 1} of ${maxRetries})`);
+    console.warn(`API rate limited or server error. Retrying in ${waitTime}ms... (Attempt ${attempt + 1} of ${maxRetries})`);
     await delay(waitTime);
   }
   throw new Error("Max retries reached");
