@@ -73,57 +73,80 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<AnimeDa
     // Fallback to all queries if none match
     if (validQueries.length === 0) validQueries = priorityQueries;
 
-    // Randomize the selection of the priority query to ensure variety on refresh
-    const query = validQueries[Math.floor(Math.random() * validQueries.length)];
+    // Randomize and pick top 3 queries for a wider, more diverse candidate pool
+    const shuffledQueries = [...validQueries].sort(() => 0.5 - Math.random());
+    const selectedQueries = shuffledQueries.slice(0, 3);
     
-    // Always fetch page 1, sorted by start_date desc to get the newest anime
-    let url = `https://api.jikan.moe/v4/anime?sfw=true&order_by=start_date&sort=desc&page=1`;
-    if (query.genres) url += `&genres=${query.genres}`;
-    if (query.q) url += `&q=${query.q}`;
+    const allAnime: any[] = [];
+    const seenMalIds = new Set<number>();
 
-    // Apply banned genres at the API level
-    if (WESEKAI_CONSTANTS.BANNED_GENRE_IDS.length > 0) {
-      url += `&genres_exclude=${WESEKAI_CONSTANTS.BANNED_GENRE_IDS.join(',')}`;
+    // Fetch sequentially to respect Jikan's strict rate limits
+    for (const query of selectedQueries) {
+      let url = `https://api.jikan.moe/v4/anime?sfw=true&order_by=start_date&sort=desc&page=1`;
+      if (query.genres) url += `&genres=${query.genres}`;
+      if (query.q) url += `&q=${query.q}`;
+
+      // Apply banned genres at the API level
+      if (WESEKAI_CONSTANTS.BANNED_GENRE_IDS.length > 0) {
+        url += `&genres_exclude=${WESEKAI_CONSTANTS.BANNED_GENRE_IDS.join(',')}`;
+      }
+
+      try {
+        const response = await fetchWithBackoff(url);
+        if (response.status === 429) continue;
+        if (!response.ok) continue;
+        
+        const data = await response.json();
+        if (data.data) {
+          for (const anime of data.data) {
+            if (!seenMalIds.has(anime.mal_id)) {
+              seenMalIds.add(anime.mal_id);
+              allAnime.push(anime);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Query failed:", e);
+      }
+      
+      // Be nice to Jikan API (max 3 req/sec)
+      await delay(334);
     }
 
-    const response = await fetchWithBackoff(url);
-    
-    if (response.status === 429) {
+    if (allAnime.length === 0) {
       throw new Error("Intelligence Layer is cooling down. Please wait a few seconds before requesting again.");
     }
-    
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    
-    const data = await response.json();
-    
-    if (data.data && data.data.length > 0) {
+
+    if (allAnime.length > 0) {
       // Client-side fallback filtering
-      const filteredData = data.data.filter((anime: any) => {
+      const filteredData = allAnime.filter((anime: any) => {
         const hasBannedGenre = anime.genres?.some((g: any) => WESEKAI_CONSTANTS.BANNED_GENRES.includes(g.name));
         const hasBannedTheme = anime.themes?.some((t: any) => WESEKAI_CONSTANTS.BANNED_GENRES.includes(t.name));
         return !hasBannedGenre && !hasBannedTheme;
       });
 
       return filteredData.map((anime: any) => {
-        const tags = new Set<string>();
+        const tagWeights = new Map<string, number>();
         const synopsisLower = (anime.synopsis || "").toLowerCase();
         
-        // 1. Map MAL Genres/Themes
+        const addTag = (tag: string, weight: number) => {
+          tagWeights.set(tag, (tagWeights.get(tag) || 0) + weight);
+        };
+
+        // 1. Map MAL Genres/Themes (High Weight)
         anime.genres?.forEach((g: any) => {
-          if (g.name === 'Military') tags.add('military');
-          if (g.name === 'Strategy Game') tags.add('strategy');
-          if (g.name === 'Fantasy') tags.add('fantasy');
+          if (g.name === 'Military') addTag('military', 5);
+          if (g.name === 'Strategy Game') addTag('strategy', 5);
+          if (g.name === 'Fantasy') addTag('fantasy', 5);
         });
         
         anime.themes?.forEach((t: any) => {
-          if (t.name === 'Isekai') tags.add('isekai');
-          if (t.name === 'Reincarnation') tags.add('reincarnation');
-          if (t.name === 'Video Game') tags.add('games');
+          if (t.name === 'Isekai') addTag('isekai', 5);
+          if (t.name === 'Reincarnation') addTag('reincarnation', 5);
+          if (t.name === 'Video Game') addTag('games', 5);
         });
 
-        // 2. Keyword Extraction from Synopsis
+        // 2. Keyword Extraction from Synopsis (Frequency-based Weight)
         const keywords = [
           'kingdom', 'economy', 'politics', 'nation', 'strategy', 
           'diplomacy', 'rebuild', 'science', 'technology', 'trade', 
@@ -133,24 +156,31 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<AnimeDa
         ];
 
         keywords.forEach(kw => {
-          const regex = new RegExp(`\\b${kw}\\b`, 'i');
-          if (regex.test(synopsisLower)) {
-            tags.add(kw);
+          const regex = new RegExp(`\\b${kw}\\b`, 'gi');
+          const matches = synopsisLower.match(regex);
+          if (matches) {
+            addTag(kw, matches.length);
           }
         });
 
         // Fallback tags if none found
-        if (tags.size === 0) {
-          tags.add('adventure');
+        if (tagWeights.size === 0) {
+          addTag('adventure', 1);
         }
+
+        // Sort tags by weight descending and take top 6
+        const sortedTags = Array.from(tagWeights.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 6)
+          .map(entry => entry[0]);
 
         return {
           title: anime.title_english || anime.title,
-          imageUrl: anime.images.webp.large_image_url || anime.images.jpg.large_image_url,
+          imageUrl: anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url || "",
           score: anime.score || 0,
           synopsis: anime.synopsis || "No synopsis available.",
           url: anime.url,
-          tags: Array.from(tags).slice(0, 6)
+          tags: sortedTags
         };
       });
     }
