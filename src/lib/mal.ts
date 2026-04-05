@@ -1,3 +1,5 @@
+import { WESEKAI_CONSTANTS } from '../wesekai.constants';
+
 export interface AnimeData {
   title: string;
   imageUrl: string;
@@ -79,6 +81,11 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<AnimeDa
     if (query.genres) url += `&genres=${query.genres}`;
     if (query.q) url += `&q=${query.q}`;
 
+    // Apply banned genres at the API level
+    if (WESEKAI_CONSTANTS.BANNED_GENRE_IDS.length > 0) {
+      url += `&genres_exclude=${WESEKAI_CONSTANTS.BANNED_GENRE_IDS.join(',')}`;
+    }
+
     const response = await fetchWithBackoff(url);
     
     if (response.status === 429) {
@@ -92,7 +99,14 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<AnimeDa
     const data = await response.json();
     
     if (data.data && data.data.length > 0) {
-      return data.data.map((anime: any) => {
+      // Client-side fallback filtering
+      const filteredData = data.data.filter((anime: any) => {
+        const hasBannedGenre = anime.genres?.some((g: any) => WESEKAI_CONSTANTS.BANNED_GENRES.includes(g.name));
+        const hasBannedTheme = anime.themes?.some((t: any) => WESEKAI_CONSTANTS.BANNED_GENRES.includes(t.name));
+        return !hasBannedGenre && !hasBannedTheme;
+      });
+
+      return filteredData.map((anime: any) => {
         const tags = new Set<string>();
         const synopsisLower = (anime.synopsis || "").toLowerCase();
         

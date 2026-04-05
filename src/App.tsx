@@ -3,6 +3,7 @@ import { AnimatePresence } from 'motion/react';
 import { fetchTopAnimeList } from './lib/mal';
 import { calculateWorldBuildingScore } from './lib/scoring';
 import { ELITE_ANIME } from './lib/elite';
+import { WESEKAI_CONSTANTS } from './wesekai.constants';
 import { Recommendation } from './types';
 import { TelemetryModal } from './components/TelemetryModal';
 import { AnimeListModal } from './components/AnimeListModal';
@@ -60,6 +61,11 @@ export default function App() {
     try {
       // 1. Get Elite Anime that match the filter
       const filteredElite = ELITE_ANIME.filter(anime => {
+        const hasBannedGenre = anime.tags.some(tag => 
+          WESEKAI_CONSTANTS.BANNED_GENRES.some(banned => tag.toLowerCase() === banned.toLowerCase())
+        );
+        if (hasBannedGenre) return false;
+
         if (activeFilter === 'All') return true;
         return anime.tags.some(tag => tag.toLowerCase() === activeFilter.toLowerCase());
       });
