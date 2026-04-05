@@ -82,13 +82,13 @@ export function AnimeListModal({ type, watchlist, onClose, onRemove }: { type: '
                         </a>
                         <a 
                           href={rec.contentData.type === 'manhwa' 
-                            ? `https://mangareader.to/search?keyword=${encodeURIComponent(rec.contentData.title)}`
+                            ? `https://mangadex.org/titles?q=${encodeURIComponent(rec.contentData.title)}`
                             : `https://aniwatchtv.to/search?keyword=${encodeURIComponent(rec.contentData.title)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`text-xs font-medium ${themeColor} ${linkHover} flex items-center gap-1`}
                         >
-                          <PlayCircle className="w-3 h-3" /> Watch
+                          <PlayCircle className="w-3 h-3" /> {rec.contentData.type === 'manhwa' ? 'Read' : 'Watch'}
                         </a>
                       </div>
                       <button 

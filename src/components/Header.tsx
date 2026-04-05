@@ -1,7 +1,12 @@
 import React from 'react';
 import { motion } from 'motion/react';
 
-export function Header() {
+interface HeaderProps {
+  mediaType: 'all' | 'anime' | 'manhwa';
+  setMediaType: (type: 'all' | 'anime' | 'manhwa') => void;
+}
+
+export function Header({ mediaType, setMediaType }: HeaderProps) {
   return (
     <>
       {/* System Status Indicator */}
@@ -27,9 +32,28 @@ export function Header() {
         <h1 className="font-display text-5xl sm:text-6xl md:text-8xl font-extrabold tracking-tighter mb-4 sm:mb-6 bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent drop-shadow-sm">
           WESEKAI
         </h1>
-        <p className="text-zinc-400 text-lg sm:text-xl md:text-2xl leading-relaxed max-w-2xl mx-auto font-light px-2">
+        <p className="text-zinc-400 text-lg sm:text-xl md:text-2xl leading-relaxed max-w-2xl mx-auto font-light px-2 mb-8">
           Dynamic isekai recommendations powered by the <span className="text-indigo-300 font-medium">Wesley Intelligence Layer</span>.
         </p>
+
+        {/* Media Type Toggle */}
+        <div className="flex justify-center">
+          <div className="bg-zinc-900/80 p-1.5 rounded-full border border-zinc-800 flex items-center shadow-lg backdrop-blur-md">
+            {(['all', 'anime', 'manhwa'] as const).map(type => (
+              <button
+                key={type}
+                onClick={() => setMediaType(type)}
+                className={`px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-all ${
+                  mediaType === type 
+                    ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]' 
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        </div>
       </motion.div>
     </>
   );

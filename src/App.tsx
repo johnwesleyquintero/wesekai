@@ -56,6 +56,7 @@ export default function App() {
   
   // v2 Features
   const [activeFilter, setActiveFilter] = useState('All');
+  const [mediaType, setMediaType] = useState<'all' | 'anime' | 'manhwa'>('all');
   const [modalView, setModalView] = useState<'none' | 'arsenal' | 'dropped' | 'telemetry'>('none');
   const [watchlist, setWatchlist] = useState<Recommendation[]>(() => {
     const saved = localStorage.getItem('wesekai-arsenal');
@@ -93,8 +94,8 @@ export default function App() {
     setError(null);
     
     try {
-      // 1. Get Elite Anime that match the filter
-      const filteredElite = ELITE_ANIME.filter(anime => {
+      // 1. Get Elite Anime that match the filter (only if anime is included)
+      const filteredElite = (mediaType === 'all' || mediaType === 'anime') ? ELITE_ANIME.filter(anime => {
         const hasBannedGenre = anime.tags.some(tag => 
           WESEKAI_CONSTANTS.BANNED_GENRES.some(banned => tag.toLowerCase() === banned.toLowerCase())
         );
@@ -102,7 +103,7 @@ export default function App() {
 
         if (activeFilter === 'All') return true;
         return anime.tags.some(tag => tag.toLowerCase() === activeFilter.toLowerCase());
-      });
+      }) : [];
 
       const eliteRecs = filteredElite.map(animeData => {
         const scoring = calculateWorldBuildingScore(animeData.tags);
@@ -125,16 +126,21 @@ export default function App() {
       });
 
       // 2. Fetch from APIs (Anime + Manhwa) with graceful fallback
-      const [animeList, manhwaList] = await Promise.all([
-        fetchTopAnimeList(activeFilter).catch(err => {
-          console.warn("Anime API failed, falling back:", err);
-          return [] as UnifiedContent[];
-        }),
-        fetchTopManhwa(activeFilter).catch(err => {
-          console.warn("Manhwa API failed, falling back:", err);
-          return [] as UnifiedContent[];
-        })
-      ]);
+      const fetchAnime = (mediaType === 'all' || mediaType === 'anime') 
+        ? fetchTopAnimeList(activeFilter).catch(err => {
+            console.warn("Anime API failed, falling back:", err);
+            return [] as UnifiedContent[];
+          })
+        : Promise.resolve([] as UnifiedContent[]);
+
+      const fetchManhwa = (mediaType === 'all' || mediaType === 'manhwa')
+        ? fetchTopManhwa(activeFilter).catch(err => {
+            console.warn("Manhwa API failed, falling back:", err);
+            return [] as UnifiedContent[];
+          })
+        : Promise.resolve([] as UnifiedContent[]);
+
+      const [animeList, manhwaList] = await Promise.all([fetchAnime, fetchManhwa]);
 
       if (eliteRecs.length === 0 && animeList.length === 0 && manhwaList.length === 0) {
         throw new Error("Could not fetch data from sources, and no Elite Anime matched your filter. Please try again later.");
@@ -172,10 +178,10 @@ export default function App() {
     }
   };
 
-  // Fetch on mount and when filter changes
+  // Fetch on mount and when filter or mediaType changes
   useEffect(() => {
     fetchRecommendations();
-  }, [activeFilter]);
+  }, [activeFilter, mediaType]);
 
   // Omakase Engine: Compute Next Best Anime
   const computeNext = useCallback(() => {
@@ -332,7 +338,7 @@ export default function App() {
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 md:py-24 lg:py-32 flex flex-col items-center relative z-10">
-        <Header />
+        <Header mediaType={mediaType} setMediaType={setMediaType} />
         <FilterBar filters={FILTERS} activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
         <ErrorState error={error} />
         <RecommendationArea 

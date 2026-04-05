@@ -203,7 +203,7 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
               </a>
               <a 
                 href={recommendation.contentData.type === 'manhwa' 
-                  ? `https://mangareader.to/search?keyword=${encodeURIComponent(recommendation.contentData.title)}`
+                  ? `https://mangadex.org/titles?q=${encodeURIComponent(recommendation.contentData.title)}`
                   : `https://aniwatchtv.to/search?keyword=${encodeURIComponent(recommendation.contentData.title)}`}
                 target="_blank"
                 rel="noopener noreferrer"
