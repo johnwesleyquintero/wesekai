@@ -1,13 +1,5 @@
 import { WESEKAI_CONSTANTS } from '../wesekai.constants';
-
-export interface AnimeData {
-  title: string;
-  imageUrl: string;
-  score: number;
-  synopsis: string;
-  url: string;
-  tags: string[];
-}
+import { UnifiedContent } from '../types';
 
 // Priority MAL Genre IDs:
 // 62: Isekai, 73: Reincarnation, 38: Military, 11: Strategy Game, 10: Fantasy
@@ -55,7 +47,7 @@ async function fetchWithBackoff(url: string, maxRetries = 3, baseDelay = 1000): 
   throw new Error("Max retries reached");
 }
 
-export async function fetchTopAnimeList(filter: string = 'All'): Promise<AnimeData[]> {
+export async function fetchTopAnimeList(filter: string = 'All'): Promise<UnifiedContent[]> {
   try {
     // Filter the priority queries based on the selected filter
     let validQueries = priorityQueries;
@@ -179,6 +171,7 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<AnimeDa
           .map(entry => entry[0]);
 
         return {
+          type: 'anime',
           title: anime.title_english || anime.title,
           imageUrl: anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url || "",
           score: anime.score || 0,

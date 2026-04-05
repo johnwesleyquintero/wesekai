@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Crown, Ban, FastForward, Bookmark, Globe, Info, Star, ExternalLink, PlayCircle, Check, Copy } from 'lucide-react';
+import { Crown, Ban, FastForward, Bookmark, Globe, Info, Star, ExternalLink, PlayCircle, Check, Copy, Youtube } from 'lucide-react';
 import { Recommendation } from '../types';
+import { getYouTubeSearchUrl } from '../lib/youtube';
 
 export const cardVariants = {
   initial: ({ confidence }: { confidence: number }) => {
@@ -67,8 +68,8 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
             initial={{ scale: 1.1 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.8 }}
-            src={recommendation.malData.imageUrl} 
-            alt={recommendation.malData.title}
+            src={recommendation.contentData.imageUrl} 
+            alt={recommendation.contentData.title}
             className="absolute inset-0 w-full h-full object-cover"
             referrerPolicy="no-referrer"
             loading="lazy"
@@ -126,7 +127,7 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
 
           {/* Title */}
           <h2 className="font-display text-4xl md:text-5xl font-bold mb-8 leading-tight text-white drop-shadow-md">
-            {recommendation.malData.title}
+            {recommendation.contentData.title}
           </h2>
 
           {/* RPG Stats / Scores */}
@@ -165,7 +166,7 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
               <div>
                 <div className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-0.5">MAL Rating</div>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-display font-bold text-xl text-yellow-100">{recommendation.malData.score}</span>
+                  <span className="font-display font-bold text-xl text-yellow-100">{recommendation.contentData.score}</span>
                   <span className="text-zinc-600 text-sm">/10</span>
                 </div>
               </div>
@@ -175,33 +176,46 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
           {/* Synopsis */}
           <div className="prose prose-invert prose-zinc max-w-none mb-10">
             <p className="text-zinc-400 leading-relaxed text-base md:text-lg line-clamp-6 md:line-clamp-none font-light">
-              {recommendation.malData.synopsis}
+              {recommendation.contentData.synopsis}
             </p>
           </div>
 
           {/* Footer Link */}
-          <div className="mt-auto pt-8 border-t border-zinc-800/60 flex flex-wrap items-center gap-6">
-            <a 
-              href={recommendation.malData.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-indigo-300 transition-colors"
-            >
-              Access Database Entry
-              <ExternalLink className="w-4 h-4 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
-            </a>
-            <a 
-              href={`https://aniwatchtv.to/search?keyword=${encodeURIComponent(recommendation.malData.title)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-purple-400 transition-colors"
-            >
-              <PlayCircle className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
-              Check Anime
-            </a>
+          <div className="mt-auto pt-8 border-t border-zinc-800/60 flex flex-wrap items-center justify-between gap-6">
+            <div className="flex flex-wrap items-center gap-4 md:gap-6">
+              <a 
+                href={recommendation.contentData.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-indigo-300 transition-colors"
+              >
+                Access Database Entry
+                <ExternalLink className="w-4 h-4 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+              </a>
+              <a 
+                href={getYouTubeSearchUrl(recommendation.contentData.title, recommendation.contentData.type)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-red-400 transition-colors"
+              >
+                <Youtube className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
+                Watch Recap
+              </a>
+              <a 
+                href={recommendation.contentData.type === 'manhwa' 
+                  ? `https://mangareader.to/search?keyword=${encodeURIComponent(recommendation.contentData.title)}`
+                  : `https://aniwatchtv.to/search?keyword=${encodeURIComponent(recommendation.contentData.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-purple-400 transition-colors"
+              >
+                <PlayCircle className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
+                {recommendation.contentData.type === 'manhwa' ? 'Check Manhwa' : 'Check Anime'}
+              </a>
+            </div>
             <button 
               onClick={copyToClipboard}
-              className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-emerald-400 transition-colors ml-auto"
+              className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-emerald-400 transition-colors"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 group-hover/link:scale-110 transition-transform" />}
               {copied ? <span className="text-emerald-400">Copied!</span> : 'Copy Title'}

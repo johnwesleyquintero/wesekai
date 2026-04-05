@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { fetchTopAnimeList } from './lib/mal';
+import { fetchTopManhwa } from './lib/anilist';
 import { calculateWorldBuildingScore } from './lib/scoring';
 import { ELITE_ANIME } from './lib/elite';
 import { WESEKAI_CONSTANTS } from './wesekai.constants';
@@ -75,26 +76,37 @@ export default function App() {
         return {
           title: animeData.title,
           tags: animeData.tags,
-          malData: animeData,
+          contentData: {
+            type: 'anime' as const,
+            title: animeData.title,
+            imageUrl: animeData.imageUrl,
+            score: animeData.score,
+            synopsis: animeData.synopsis,
+            url: animeData.url,
+            tags: animeData.tags
+          },
           wbScore: scoring.score,
           wbReasons: scoring.reasons,
           isElite: true
         };
       });
 
-      // 2. Fetch from API
-      const animeList = await fetchTopAnimeList(activeFilter);
+      // 2. Fetch from APIs (Anime + Manhwa)
+      const [animeList, manhwaList] = await Promise.all([
+        fetchTopAnimeList(activeFilter),
+        fetchTopManhwa(activeFilter)
+      ]);
 
-      if (!animeList || animeList.length === 0) {
-        throw new Error("Could not fetch data from MyAnimeList. Please try again.");
+      if ((!animeList || animeList.length === 0) && (!manhwaList || manhwaList.length === 0)) {
+        throw new Error("Could not fetch data from sources. Please try again.");
       }
 
-      const apiRecs = animeList.map(animeData => {
-        const scoring = calculateWorldBuildingScore(animeData.tags);
+      const apiRecs = [...animeList, ...manhwaList].map(contentData => {
+        const scoring = calculateWorldBuildingScore(contentData.tags);
         return {
-          title: animeData.title,
-          tags: animeData.tags,
-          malData: animeData,
+          title: contentData.title,
+          tags: contentData.tags,
+          contentData: contentData,
           wbScore: scoring.score,
           wbReasons: scoring.reasons,
           isElite: false
@@ -103,7 +115,7 @@ export default function App() {
 
       // 3. Combine and Deduplicate
       const combined = [...eliteRecs, ...apiRecs];
-      const uniqueRecs = Array.from(new Map(combined.map(item => [item.malData.url, item])).values());
+      const uniqueRecs = Array.from(new Map(combined.map(item => [item.contentData.url, item])).values());
 
       // 4. Sort: Elite first, then by WB Score
       uniqueRecs.sort((a, b) => {
@@ -135,8 +147,8 @@ export default function App() {
 
     candidatePool.forEach(rec => {
       // Hard filters
-      if (watchlist.some(w => w.malData.url === rec.malData.url)) return;
-      if (droppedList.some(d => d.malData.url === rec.malData.url)) return;
+      if (watchlist.some(w => w.contentData.url === rec.contentData.url)) return;
+      if (droppedList.some(d => d.contentData.url === rec.contentData.url)) return;
 
       // --- DRIFT ENGINE v1 ---
       let rawTagScore = 0;
@@ -168,17 +180,17 @@ export default function App() {
 
       const tagMatchScore = Math.max(0, Math.min(10, 5 + rawTagScore));
 
-      let finalScore = (rec.wbScore * 0.45) + (rec.malData.score * 0.25) + (tagMatchScore * 0.20) + (rec.isElite ? 2.0 : 0);
+      let finalScore = (rec.wbScore * 0.45) + (rec.contentData.score * 0.25) + (tagMatchScore * 0.20) + (rec.isElite ? 2.0 : 0);
 
       finalScore *= driftMultiplier; // Apply Drift Engine Modifiers
       // -----------------------
 
       // Apply memory modifiers
-      const shownCount = sessionMemory.shown[rec.malData.url] || 0;
+      const shownCount = sessionMemory.shown[rec.contentData.url] || 0;
       if (shownCount >= 3) finalScore *= 0.4;
       else if (shownCount >= 2) finalScore *= 0.7;
 
-      if (sessionMemory.skipped.has(rec.malData.url)) finalScore *= 0.6;
+      if (sessionMemory.skipped.has(rec.contentData.url)) finalScore *= 0.6;
 
       if (finalScore > bestScore) {
         bestScore = finalScore;
@@ -196,7 +208,7 @@ export default function App() {
       setCurrentRec(bestRec);
       setSessionMemory(prev => ({
         ...prev,
-        shown: { ...prev.shown, [bestRec!.malData.url]: (prev.shown[bestRec!.malData.url] || 0) + 1 }
+        shown: { ...prev.shown, [bestRec!.contentData.url]: (prev.shown[bestRec!.contentData.url] || 0) + 1 }
       }));
     } else {
       // Pool exhausted, fetch more
@@ -241,7 +253,7 @@ export default function App() {
   const handleSkip = useCallback((rec: Recommendation) => {
     setSessionMemory(prev => {
       const newSkipped = new Set(prev.skipped);
-      newSkipped.add(rec.malData.url);
+      newSkipped.add(rec.contentData.url);
       return { ...prev, skipped: newSkipped };
     });
     setTagPreferences(prev => {
@@ -310,9 +322,9 @@ export default function App() {
             onClose={() => setModalView('none')} 
             onRemove={(rec) => {
               if (modalView === 'arsenal') {
-                setWatchlist(prev => prev.filter(item => item.malData.url !== rec.malData.url));
+                setWatchlist(prev => prev.filter(item => item.contentData.url !== rec.contentData.url));
               } else {
-                setDroppedList(prev => prev.filter(item => item.malData.url !== rec.malData.url));
+                setDroppedList(prev => prev.filter(item => item.contentData.url !== rec.contentData.url));
               }
             }}
           />

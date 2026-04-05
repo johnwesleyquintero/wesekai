@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Library, Ban, X, Globe, Star, PlayCircle, Trash2 } from 'lucide-react';
+import { Library, Ban, X, Globe, Star, PlayCircle, Trash2, Youtube } from 'lucide-react';
 import { Recommendation } from '../types';
+import { getYouTubeSearchUrl } from '../lib/youtube';
 
 export function AnimeListModal({ type, watchlist, onClose, onRemove }: { type: 'arsenal' | 'dropped', watchlist: Recommendation[], onClose: () => void, onRemove: (rec: Recommendation) => void }) {
   const isArsenal = type === 'arsenal';
@@ -54,9 +55,9 @@ export function AnimeListModal({ type, watchlist, onClose, onRemove }: { type: '
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {watchlist.map((rec) => (
-                <div key={rec.malData.url} className={`flex gap-5 p-5 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl group ${hoverBorder} transition-colors`}>
+                <div key={rec.contentData.url} className={`flex gap-5 p-5 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl group ${hoverBorder} transition-colors`}>
                   <img 
-                    src={rec.malData.imageUrl} 
+                    src={rec.contentData.imageUrl} 
                     alt={rec.title} 
                     className="w-24 h-32 object-cover rounded-xl shadow-md"
                     referrerPolicy="no-referrer"
@@ -67,17 +68,29 @@ export function AnimeListModal({ type, watchlist, onClose, onRemove }: { type: '
                     <h3 className="font-bold text-zinc-200 line-clamp-2 mb-1">{rec.title}</h3>
                     <div className="flex items-center gap-2 text-xs text-zinc-500 mb-auto">
                       <span className="flex items-center gap-1"><Globe className={`w-3 h-3 ${themeColor}`}/> {rec.wbScore.toFixed(1)}</span>
-                      <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500"/> {rec.malData.score}</span>
+                      <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500"/> {rec.contentData.score}</span>
                     </div>
                     <div className="flex items-center justify-between mt-2">
-                      <a 
-                        href={`https://aniwatchtv.to/search?keyword=${encodeURIComponent(rec.title)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`text-xs font-medium ${themeColor} ${linkHover} flex items-center gap-1`}
-                      >
-                        <PlayCircle className="w-3 h-3" /> Watch
-                      </a>
+                      <div className="flex gap-3">
+                        <a 
+                          href={getYouTubeSearchUrl(rec.contentData.title, rec.contentData.type)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`text-xs font-medium ${themeColor} ${linkHover} flex items-center gap-1`}
+                        >
+                          <Youtube className="w-3 h-3" /> Recap
+                        </a>
+                        <a 
+                          href={rec.contentData.type === 'manhwa' 
+                            ? `https://mangareader.to/search?keyword=${encodeURIComponent(rec.contentData.title)}`
+                            : `https://aniwatchtv.to/search?keyword=${encodeURIComponent(rec.contentData.title)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`text-xs font-medium ${themeColor} ${linkHover} flex items-center gap-1`}
+                        >
+                          <PlayCircle className="w-3 h-3" /> Watch
+                        </a>
+                      </div>
                       <button 
                         onClick={() => onRemove(rec)}
                         className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors"

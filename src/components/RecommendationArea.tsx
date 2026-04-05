@@ -35,7 +35,7 @@ export function RecommendationArea({
         <div className="w-full max-w-4xl">
           <AnimatePresence mode="wait">
             <ResultCard 
-              key={currentRec.malData.url} 
+              key={currentRec.contentData.url} 
               recommendation={currentRec} 
               onWatch={() => handleWatch(currentRec)}
               onSkip={() => handleSkip(currentRec)}
