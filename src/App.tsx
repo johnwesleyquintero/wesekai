@@ -16,6 +16,39 @@ import { RecommendationArea } from './components/RecommendationArea';
 
 const FILTERS = ['All', 'Isekai', 'Fantasy', 'Military', 'Strategy', 'Reincarnation'];
 
+// Helper to migrate old localStorage data
+const migrateData = (data: any[]): Recommendation[] => {
+  if (!Array.isArray(data)) return [];
+  return data.filter(Boolean).map(item => {
+    if (!item.contentData) {
+      if (item.malData) {
+        return {
+          ...item,
+          contentData: {
+            ...item.malData,
+            type: 'anime',
+            tags: item.malData.tags || item.tags || []
+          }
+        };
+      } else {
+        return {
+          ...item,
+          contentData: {
+            url: item.url || Math.random().toString(),
+            title: item.title || 'Unknown',
+            type: 'anime',
+            imageUrl: '',
+            score: 0,
+            synopsis: '',
+            tags: item.tags || []
+          }
+        };
+      }
+    }
+    return item;
+  });
+};
+
 export default function App() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,11 +59,11 @@ export default function App() {
   const [modalView, setModalView] = useState<'none' | 'arsenal' | 'dropped' | 'telemetry'>('none');
   const [watchlist, setWatchlist] = useState<Recommendation[]>(() => {
     const saved = localStorage.getItem('wesekai-arsenal');
-    return saved ? JSON.parse(saved) : [];
+    return saved ? migrateData(JSON.parse(saved)) : [];
   });
   const [droppedList, setDroppedList] = useState<Recommendation[]>(() => {
     const saved = localStorage.getItem('wesekai-dropped');
-    return saved ? JSON.parse(saved) : [];
+    return saved ? migrateData(JSON.parse(saved)) : [];
   });
 
   // Omakase Engine State
@@ -147,8 +180,9 @@ export default function App() {
 
     candidatePool.forEach(rec => {
       // Hard filters
-      if (watchlist.some(w => w.contentData.url === rec.contentData.url)) return;
-      if (droppedList.some(d => d.contentData.url === rec.contentData.url)) return;
+      if (!rec?.contentData?.url) return;
+      if (watchlist.some(w => w?.contentData?.url === rec.contentData.url)) return;
+      if (droppedList.some(d => d?.contentData?.url === rec.contentData.url)) return;
 
       // --- DRIFT ENGINE v1 ---
       let rawTagScore = 0;
