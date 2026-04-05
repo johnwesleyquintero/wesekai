@@ -121,21 +121,54 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
         addTag(t.name.toLowerCase(), 3);
       });
 
-      // 2. Keyword Extraction from Description (Frequency-based Weight)
-      const keywords = [
-        'kingdom', 'economy', 'politics', 'nation', 'strategy', 
-        'diplomacy', 'rebuild', 'science', 'technology', 'trade', 
-        'agriculture', 'society', 'npc', 'guild', 'systems', 
-        'conquest', 'invention', 'community', 'village', 'merchants', 
-        'civilization', 'empire', 'magic', 'demon lord', 'management', 'crafting',
-        'system', 'regression', 'reincarnation', 'tower', 'hunter', 'dungeon', 'player'
-      ];
+      // 2. Keyword Extraction from Description (Frequency-based Weight with Synonyms)
+      const keywordSynonyms: Record<string, string[]> = {
+        kingdom: ['kingdom', 'realm', 'monarchy', 'domain'],
+        economy: ['economy', 'economics', 'finance', 'commerce', 'capitalism', 'market'],
+        politics: ['politics', 'political', 'nobility', 'aristocracy', 'faction', 'court'],
+        nation: ['nation', 'country', 'state', 'territory'],
+        strategy: ['strategy', 'tactics', 'strategic', 'tactical', 'planning'],
+        diplomacy: ['diplomacy', 'negotiation', 'treaty', 'alliance', 'ambassador'],
+        rebuild: ['rebuild', 'reconstruction', 'restore', 'revive', 'rebuilding'],
+        science: ['science', 'scientific', 'physics', 'chemistry'],
+        technology: ['technology', 'tech', 'engineering', 'industrial', 'modern'],
+        trade: ['trade', 'trading', 'commerce', 'business', 'sell', 'buy', 'merchant'],
+        agriculture: ['agriculture', 'farming', 'crop', 'harvest', 'farm', 'cultivation'],
+        society: ['society', 'culture', 'civilization'],
+        npc: ['npc', 'non-player character', 'villager'],
+        guild: ['guild', 'clan', 'faction', 'syndicate'],
+        systems: ['systems', 'game system', 'status screen', 'leveling', 'stats'],
+        conquest: ['conquest', 'conquer', 'invasion', 'warfare', 'domination'],
+        invention: ['invention', 'invent', 'create', 'innovation', 'gadget'],
+        community: ['community', 'settlement', 'town', 'people'],
+        village: ['village', 'town', 'hamlet', 'settlement'],
+        merchants: ['merchants', 'merchant', 'trader', 'peddler'],
+        civilization: ['civilization', 'culture', 'society'],
+        empire: ['empire', 'imperial', 'emperor', 'empress'],
+        magic: ['magic', 'magical', 'spell', 'sorcery', 'wizardry', 'mana'],
+        'demon lord': ['demon lord', 'maou', 'demon king'],
+        management: ['management', 'manage', 'administration', 'governance', 'oversee'],
+        crafting: ['crafting', 'craft', 'blacksmith', 'alchemy', 'synthesize', 'forging'],
+        system: ['system', 'status window', 'level up', 'notification'],
+        regression: ['regression', 'regressor', 'returner', 'time travel', 'past life', 'second chance'],
+        reincarnation: ['reincarnation', 'reincarnated', 'rebirth', 'isekai', 'transmigration'],
+        tower: ['tower', 'climb', 'floor', 'obelisk'],
+        hunter: ['hunter', 'awakened', 'awakening', 'gate', 'portal'],
+        dungeon: ['dungeon', 'labyrinth', 'raid', 'boss'],
+        player: ['player', 'gamer', 'constellation', 'sponsor']
+      };
 
-      keywords.forEach(kw => {
-        const regex = new RegExp(`\\b${kw}\\b`, 'gi');
-        const matches = descriptionLower.match(regex);
-        if (matches) {
-          addTag(kw, matches.length);
+      Object.entries(keywordSynonyms).forEach(([coreTag, synonyms]) => {
+        let totalMatches = 0;
+        synonyms.forEach(syn => {
+          const regex = new RegExp(`\\b${syn}\\b`, 'gi');
+          const matches = descriptionLower.match(regex);
+          if (matches) {
+            totalMatches += matches.length;
+          }
+        });
+        if (totalMatches > 0) {
+          addTag(coreTag, totalMatches);
         }
       });
 
