@@ -36,7 +36,7 @@ export async function getWesleyAnalysis(
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite-preview', // Use 2.0 as 1.5 is deprecated in 2026
+      model: 'gemini-3-flash-preview', // Use 2.0 as 1.5 is deprecated in 2026
       contents: prompt,
     });
 
