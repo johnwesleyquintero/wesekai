@@ -13,9 +13,10 @@ import {
   Check,
   Copy,
   Youtube,
+  Loader2,
 } from 'lucide-react';
 import { Recommendation } from '../types';
-import { getYouTubeSearchUrl } from '../lib/youtube';
+import { getYouTubeSearchUrl, fetchYouTubeTrailerId } from '../lib/youtube';
 import { TrailerModal } from './TrailerModal';
 
 export const cardVariants = {
@@ -84,6 +85,8 @@ export const ResultCard: React.FC<{
   const [copied, setCopied] = useState(false);
   const [localExit, setLocalExit] = useState('none');
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+  const [isFetchingTrailer, setIsFetchingTrailer] = useState(false);
+  const [dynamicTrailerId, setDynamicTrailerId] = useState<string | undefined>(undefined);
 
   const confidence = recommendation.confidenceScore || 0.5;
   const isSuppressed = (recommendation.driftMultiplier || 1) < 1;
@@ -105,6 +108,42 @@ export const ResultCard: React.FC<{
   const handleDrop = () => {
     setLocalExit('drop');
     onDrop();
+  };
+
+  const currentTrailerId = recommendation.contentData.trailerYoutubeId || dynamicTrailerId;
+  const hasTrailer = !!currentTrailerId;
+  const canFetchTrailer =
+    !hasTrailer && !!import.meta.env.VITE_YOUTUBE_API_KEY && !isFetchingTrailer;
+
+  const handleTrailerClick = async () => {
+    if (currentTrailerId) {
+      setIsTrailerOpen(true);
+      return;
+    }
+
+    if (canFetchTrailer) {
+      setIsFetchingTrailer(true);
+      try {
+        const id = await fetchYouTubeTrailerId(
+          recommendation.contentData.title,
+          recommendation.contentData.type
+        );
+        if (id) {
+          setDynamicTrailerId(id);
+          setIsTrailerOpen(true);
+        } else {
+          // Fallback to search URL if no video found
+          window.open(
+            getYouTubeSearchUrl(recommendation.contentData.title, recommendation.contentData.type),
+            '_blank'
+          );
+        }
+      } catch (error) {
+        console.error('Trailer fetch failed:', error);
+      } finally {
+        setIsFetchingTrailer(false);
+      }
+    }
   };
 
   return (
@@ -279,12 +318,17 @@ export const ResultCard: React.FC<{
                 <ExternalLink className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
                 Database
               </a>
-              {recommendation.contentData.trailerYoutubeId && (
+              {(hasTrailer || canFetchTrailer) && (
                 <button
-                  onClick={() => setIsTrailerOpen(true)}
-                  className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-red-400 transition-colors"
+                  onClick={handleTrailerClick}
+                  disabled={isFetchingTrailer}
+                  className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Youtube className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
+                  {isFetchingTrailer ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Youtube className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
+                  )}
                   Trailer
                 </button>
               )}
@@ -329,9 +373,9 @@ export const ResultCard: React.FC<{
         </div>
       </div>
 
-      {recommendation.contentData.trailerYoutubeId && (
+      {currentTrailerId && (
         <TrailerModal
-          youtubeId={recommendation.contentData.trailerYoutubeId}
+          youtubeId={currentTrailerId}
           isOpen={isTrailerOpen}
           onClose={() => setIsTrailerOpen(false)}
         />
