@@ -277,30 +277,29 @@ export const ResultCard: React.FC<{
                 className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-indigo-300 transition-colors"
               >
                 <ExternalLink className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
-                Access Database Entry
+                Database
               </a>
-              {recommendation.contentData.trailerYoutubeId ? (
+              {recommendation.contentData.trailerYoutubeId && (
                 <button
                   onClick={() => setIsTrailerOpen(true)}
                   className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-red-400 transition-colors"
                 >
                   <Youtube className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
-                  Watch Trailer
+                  Trailer
                 </button>
-              ) : (
-                <a
-                  href={getYouTubeSearchUrl(
-                    recommendation.contentData.title,
-                    recommendation.contentData.type
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-red-400 transition-colors"
-                >
-                  <Youtube className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
-                  Watch Recap
-                </a>
               )}
+              <a
+                href={getYouTubeSearchUrl(
+                  recommendation.contentData.title,
+                  recommendation.contentData.type
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-red-400 transition-colors"
+              >
+                <Youtube className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
+                Recap
+              </a>
               <a
                 href={
                   recommendation.contentData.type === 'manhwa'
@@ -312,7 +311,7 @@ export const ResultCard: React.FC<{
                 className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-purple-400 transition-colors"
               >
                 <PlayCircle className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
-                {recommendation.contentData.type === 'manhwa' ? 'Check Manhwa' : 'Check Anime'}
+                {recommendation.contentData.type === 'manhwa' ? 'Manhwa' : 'Anime'}
               </a>
             </div>
             <button

@@ -21,6 +21,7 @@ export const ELITE_ANIME: UnifiedContent[] = [
       'civilization',
     ],
     year: 2018,
+    trailerYoutubeId: 'v8v_8S4L6_Y',
   },
   {
     type: 'anime',
@@ -43,6 +44,7 @@ export const ELITE_ANIME: UnifiedContent[] = [
       'games',
     ],
     year: 2013,
+    trailerYoutubeId: 'H_v_A8yN_oE',
   },
   {
     type: 'anime',
@@ -54,6 +56,7 @@ export const ELITE_ANIME: UnifiedContent[] = [
     url: 'https://myanimelist.net/anime/29803/Overlord',
     tags: ['isekai', 'fantasy', 'strategy', 'military', 'magic', 'empire', 'conquest', 'politics'],
     year: 2015,
+    trailerYoutubeId: 'KowCH_Uf97g',
   },
   {
     type: 'anime',
@@ -75,6 +78,7 @@ export const ELITE_ANIME: UnifiedContent[] = [
       'technology',
     ],
     year: 2019,
+    trailerYoutubeId: '6R3f169-E-M',
   },
   {
     type: 'anime',
@@ -96,6 +100,7 @@ export const ELITE_ANIME: UnifiedContent[] = [
       'strategy',
     ],
     year: 2021,
+    trailerYoutubeId: '908pT_i61-o',
   },
   {
     type: 'anime',
@@ -107,6 +112,7 @@ export const ELITE_ANIME: UnifiedContent[] = [
     url: 'https://myanimelist.net/anime/32615/Youjo_Senki',
     tags: ['isekai', 'reincarnation', 'military', 'strategy', 'magic', 'empire', 'politics'],
     year: 2017,
+    trailerYoutubeId: '768S96zS2zM',
   },
 ];
 
@@ -122,6 +128,7 @@ export const ELITE_MANHWA: UnifiedContent[] = [
     url: 'https://anilist.co/manga/105398/Na-Honjaman-Level-Up',
     tags: ['action', 'fantasy', 'system', 'hunter', 'dungeon', 'player'],
     year: 2018,
+    trailerYoutubeId: 'pS-X25TjB98',
   },
   {
     type: 'manhwa',
@@ -134,6 +141,7 @@ export const ELITE_MANHWA: UnifiedContent[] = [
     url: 'https://anilist.co/manga/119257/Jeonjijeok-Dokja-Sijeom',
     tags: ['action', 'fantasy', 'system', 'survival', 'player', 'constellation'],
     year: 2020,
+    trailerYoutubeId: 'Y-t67W885j0',
   },
   {
     type: 'manhwa',
@@ -146,6 +154,7 @@ export const ELITE_MANHWA: UnifiedContent[] = [
     url: 'https://anilist.co/manga/129750/Hwasanguihwan',
     tags: ['action', 'martial arts', 'reincarnation', 'comedy', 'sect', 'rebuild'],
     year: 2021,
+    trailerYoutubeId: 'HhW4fLz4R9U',
   },
   {
     type: 'manhwa',
@@ -158,5 +167,6 @@ export const ELITE_MANHWA: UnifiedContent[] = [
     url: 'https://anilist.co/manga/139741/Yeokdaegeup-Yeongji-Seolgyesa',
     tags: ['comedy', 'fantasy', 'isekai', 'kingdom', 'economy', 'rebuild', 'engineering'],
     year: 2021,
+    trailerYoutubeId: '2H7fD5i1p5A',
   },
 ];
