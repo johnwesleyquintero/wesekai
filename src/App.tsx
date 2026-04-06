@@ -17,9 +17,9 @@ import { RecommendationArea } from './components/RecommendationArea';
 const FILTERS = ['All', 'Isekai', 'Fantasy', 'Military', 'Strategy', 'Reincarnation'];
 
 // Helper to migrate old localStorage data
-const migrateData = (data: any[]): Recommendation[] => {
+const migrateData = (data: unknown[]): Recommendation[] => {
   if (!Array.isArray(data)) return [];
-  return data.filter(Boolean).map(item => {
+  return (data as any[]).filter(Boolean).map(item => {
     if (!item.contentData) {
       if (item.malData) {
         return {
@@ -92,7 +92,7 @@ export default function App() {
     document.title = 'WESEKAI';
   }, []);
 
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -203,12 +203,12 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeFilter, mediaType]);
 
   // Fetch on mount and when filter or mediaType changes
   useEffect(() => {
     fetchRecommendations();
-  }, [activeFilter, mediaType]);
+  }, [fetchRecommendations]);
 
   // Omakase Engine: Compute Next Best Anime
   const computeNext = useCallback(() => {
@@ -303,7 +303,7 @@ export default function App() {
       setCurrentRec(null);
       fetchRecommendations();
     }
-  }, [candidatePool, watchlist, droppedList, sessionMemory, tagPreferences]);
+  }, [candidatePool, watchlist, droppedList, sessionMemory, tagPreferences, fetchRecommendations]);
 
   const triggerNext = useCallback(() => {
     // Allow React to commit the exitAction state in ResultCard before unmounting
@@ -408,6 +408,7 @@ export default function App() {
           handleWatch={handleWatch}
           handleSkip={handleSkip}
           handleDrop={handleDrop}
+          tagPreferences={tagPreferences}
         />
       </div>
 

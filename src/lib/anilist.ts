@@ -36,6 +36,31 @@ async function fetchWithBackoff(
   throw new Error('Max retries reached');
 }
 
+interface AniListMedia {
+  id: number;
+  title: {
+    romaji: string;
+    english: string | null;
+  };
+  description: string | null;
+  averageScore: number | null;
+  coverImage: {
+    large: string | null;
+  };
+  startDate: {
+    year: number | null;
+  };
+  trailer: {
+    id: string;
+    site: string;
+  } | null;
+  tags: {
+    name: string;
+  }[];
+  genres: string[];
+  siteUrl: string;
+}
+
 export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedContent[]> {
   try {
     // AniList GraphQL Query
@@ -72,7 +97,7 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
     `;
 
     // Fetch pages 1 and 2 to get a good pool
-    const allManhwa: any[] = [];
+    const allManhwa: AniListMedia[] = [];
     for (let page = 1; page <= 2; page++) {
       const response = await fetchWithBackoff('https://graphql.anilist.co', {
         method: 'POST',
@@ -93,14 +118,10 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
     }
 
     // Filter and Map
-    const filteredData = allManhwa.filter((manhwa: any) => {
+    const filteredData = allManhwa.filter(manhwa => {
       // Filter out banned genres
-      const hasBannedGenre = manhwa.genres?.some((g: string) =>
-        WESEKAI_CONSTANTS.BANNED_GENRES.includes(g)
-      );
-      const hasBannedTag = manhwa.tags?.some((t: any) =>
-        WESEKAI_CONSTANTS.BANNED_GENRES.includes(t.name)
-      );
+      const hasBannedGenre = manhwa.genres?.some(g => WESEKAI_CONSTANTS.BANNED_GENRES.includes(g));
+      const hasBannedTag = manhwa.tags?.some(t => WESEKAI_CONSTANTS.BANNED_GENRES.includes(t.name));
 
       const titleLower = (manhwa.title?.english || manhwa.title?.romaji || '').toLowerCase();
       const hasBannedTitle = WESEKAI_CONSTANTS.BANNED_TITLE_KEYWORDS.some(kw =>
@@ -113,15 +134,15 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
       if (filter !== 'All') {
         const filterLower = filter.toLowerCase();
         const matchesFilter =
-          manhwa.genres?.some((g: string) => g.toLowerCase() === filterLower) ||
-          manhwa.tags?.some((t: any) => t.name.toLowerCase() === filterLower);
+          manhwa.genres?.some(g => g.toLowerCase() === filterLower) ||
+          manhwa.tags?.some(t => t.name.toLowerCase() === filterLower);
         if (!matchesFilter) return false;
       }
 
       return true;
     });
 
-    return filteredData.map((manhwa: any) => {
+    return filteredData.map(manhwa => {
       const tagWeights = new Map<string, number>();
       const descriptionLower = (manhwa.description || '').toLowerCase();
 
@@ -133,11 +154,11 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
       addTag('manhwa', 10);
 
       // 1. Map AniList Genres/Tags (High Weight)
-      manhwa.genres?.forEach((g: string) => {
+      manhwa.genres?.forEach(g => {
         addTag(g.toLowerCase(), 5);
       });
 
-      manhwa.tags?.forEach((t: any) => {
+      manhwa.tags?.forEach(t => {
         addTag(t.name.toLowerCase(), 3);
       });
 
@@ -222,7 +243,7 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
         synopsis: cleanSynopsis,
         url: manhwa.siteUrl,
         tags: sortedTags,
-        year: manhwa.startDate?.year,
+        year: manhwa.startDate?.year || undefined,
         trailerYoutubeId: manhwa.trailer?.site === 'youtube' ? manhwa.trailer.id : undefined,
       };
     });

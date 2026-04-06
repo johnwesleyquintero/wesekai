@@ -1,5 +1,5 @@
 import { useState, memo, FC } from 'react';
-import { motion, Variants } from 'motion/react';
+import { motion, Variants, AnimatePresence } from 'motion/react';
 import {
   Crown,
   Ban,
@@ -14,9 +14,12 @@ import {
   Copy,
   Youtube,
   Loader2,
+  Cpu,
+  Sparkles,
 } from 'lucide-react';
 import { Recommendation } from '../types';
 import { getYouTubeSearchUrl, fetchYouTubeTrailerId } from '../lib/youtube';
+import { getWesleyAnalysis } from '../lib/ai';
 import { TrailerModal } from './TrailerModal';
 
 export const cardVariants: Variants = {
@@ -81,15 +84,26 @@ export const ResultCard: FC<{
   onWatch: () => void;
   onSkip: () => void;
   onDrop: () => void;
-}> = memo(({ recommendation, onWatch, onSkip, onDrop }) => {
+  tagPreferences: Record<string, number>;
+}> = memo(({ recommendation, onWatch, onSkip, onDrop, tagPreferences }) => {
   const [copied, setCopied] = useState(false);
   const [localExit, setLocalExit] = useState('none');
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const [isFetchingTrailer, setIsFetchingTrailer] = useState(false);
   const [dynamicTrailerId, setDynamicTrailerId] = useState<string | undefined>(undefined);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<string | null>(null);
 
   const confidence = recommendation.confidenceScore || 0.5;
   const isSuppressed = (recommendation.driftMultiplier || 1) < 1;
+
+  const handleAnalysis = async () => {
+    if (analysis) return;
+    setIsAnalyzing(true);
+    const result = await getWesleyAnalysis(recommendation, tagPreferences);
+    setAnalysis(result);
+    setIsAnalyzing(false);
+  };
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(recommendation.title);
@@ -304,6 +318,48 @@ export const ResultCard: FC<{
             <p className="text-zinc-400 leading-relaxed text-sm sm:text-base md:text-lg line-clamp-6 md:line-clamp-none font-light">
               {recommendation.contentData.synopsis}
             </p>
+          </div>
+
+          {/* Wesley Intelligence Analysis */}
+          <div className="mt-8 pt-8 border-t border-zinc-800/50">
+            <AnimatePresence mode="wait">
+              {!analysis ? (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={handleAnalysis}
+                  disabled={isAnalyzing}
+                  className="flex items-center gap-3 px-6 py-3 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl text-indigo-300 hover:bg-indigo-500/20 hover:border-indigo-500/50 transition-all group/ai disabled:opacity-50"
+                >
+                  {isAnalyzing ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Cpu className="w-5 h-5 group-hover/ai:rotate-12 transition-transform" />
+                  )}
+                  <span className="text-sm font-bold uppercase tracking-widest">
+                    {isAnalyzing ? 'Accessing Intelligence Layer...' : 'Request Wesley Analysis'}
+                  </span>
+                </motion.button>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex gap-5 p-6 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl relative overflow-hidden group/analysis"
+                >
+                  <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500/50" />
+                  <Sparkles className="w-6 h-6 text-indigo-400 shrink-0 mt-1 animate-pulse" />
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/70">
+                      Intelligence Layer Response
+                    </span>
+                    <p className="text-zinc-300 text-sm italic leading-relaxed font-medium">
+                      &quot;{analysis}&quot;
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Footer Link */}

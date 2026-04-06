@@ -25,7 +25,7 @@ const priorityQueries = [
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function fetchWithBackoff(url: string, maxRetries = 3, baseDelay = 1000): Promise<Response> {
+async function fetchWithBackoff(url: string, maxRetries = 3, baseDelay = 2000): Promise<Response> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const response = await fetch(url);
@@ -57,6 +57,24 @@ async function fetchWithBackoff(url: string, maxRetries = 3, baseDelay = 1000): 
   throw new Error('Max retries reached');
 }
 
+interface MalAnime {
+  mal_id: number;
+  title: string;
+  title_english: string | null;
+  synopsis: string | null;
+  score: number | null;
+  images: {
+    webp?: { large_image_url: string | null };
+    jpg?: { large_image_url: string | null };
+  };
+  year: number | null;
+  aired: { from: string | null };
+  trailer: { youtube_id: string | null };
+  genres: { name: string }[];
+  themes: { name: string }[];
+  url: string;
+}
+
 export async function fetchTopAnimeList(filter: string = 'All'): Promise<UnifiedContent[]> {
   try {
     // Filter the priority queries based on the selected filter
@@ -75,11 +93,11 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<Unified
     // Fallback to all queries if none match
     if (validQueries.length === 0) validQueries = priorityQueries;
 
-    // Randomize and pick top 3 queries for a wider, more diverse candidate pool
+    // Randomize and pick top 2 queries (reduced from 3 to avoid rate limit)
     const shuffledQueries = [...validQueries].sort(() => 0.5 - Math.random());
-    const selectedQueries = shuffledQueries.slice(0, 3);
+    const selectedQueries = shuffledQueries.slice(0, 2);
 
-    const allAnime: any[] = [];
+    const allAnime: MalAnime[] = [];
     const seenMalIds = new Set<number>();
 
     // Fetch sequentially to respect Jikan's strict rate limits
@@ -100,7 +118,7 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<Unified
 
         const data = await response.json();
         if (data.data) {
-          for (const anime of data.data) {
+          for (const anime of data.data as MalAnime[]) {
             if (!seenMalIds.has(anime.mal_id)) {
               seenMalIds.add(anime.mal_id);
               allAnime.push(anime);
@@ -111,8 +129,8 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<Unified
         console.warn('Query failed:', e);
       }
 
-      // Be nice to Jikan API (max 3 req/sec)
-      await delay(334);
+      // Be nice to Jikan API (max 3 req/sec) - Increased delay for safety
+      await delay(500);
     }
 
     if (allAnime.length === 0) {
@@ -123,11 +141,11 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<Unified
 
     if (allAnime.length > 0) {
       // Client-side fallback filtering
-      const filteredData = allAnime.filter((anime: any) => {
-        const hasBannedGenre = anime.genres?.some((g: any) =>
+      const filteredData = allAnime.filter(anime => {
+        const hasBannedGenre = anime.genres?.some(g =>
           WESEKAI_CONSTANTS.BANNED_GENRES.includes(g.name)
         );
-        const hasBannedTheme = anime.themes?.some((t: any) =>
+        const hasBannedTheme = anime.themes?.some(t =>
           WESEKAI_CONSTANTS.BANNED_GENRES.includes(t.name)
         );
 
@@ -139,7 +157,7 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<Unified
         return !hasBannedGenre && !hasBannedTheme && !hasBannedTitle;
       });
 
-      return filteredData.map((anime: any) => {
+      return filteredData.map(anime => {
         const tagWeights = new Map<string, number>();
         const synopsisLower = (anime.synopsis || '').toLowerCase();
 
@@ -148,13 +166,13 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<Unified
         };
 
         // 1. Map MAL Genres/Themes (High Weight)
-        anime.genres?.forEach((g: any) => {
+        anime.genres?.forEach(g => {
           if (g.name === 'Military') addTag('military', 5);
           if (g.name === 'Strategy Game') addTag('strategy', 5);
           if (g.name === 'Fantasy') addTag('fantasy', 5);
         });
 
-        anime.themes?.forEach((t: any) => {
+        anime.themes?.forEach(t => {
           if (t.name === 'Isekai') addTag('isekai', 5);
           if (t.name === 'Reincarnation') addTag('reincarnation', 5);
           if (t.name === 'Video Game') addTag('games', 5);
@@ -226,7 +244,7 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<Unified
           year:
             anime.year ||
             (anime.aired?.from ? new Date(anime.aired.from).getFullYear() : undefined),
-          trailerYoutubeId: anime.trailer?.youtube_id,
+          trailerYoutubeId: anime.trailer?.youtube_id || undefined,
         };
       });
     }
