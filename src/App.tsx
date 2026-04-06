@@ -8,8 +8,10 @@ import { ErrorState } from './components/ErrorState';
 import { RecommendationArea } from './components/RecommendationArea';
 import { useRecommendationEngine } from './hooks/useRecommendationEngine';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { MobileNav } from './components/MobileNav';
+import { refreshEliteImages } from './lib/elite';
 
-const FILTERS = ['All', 'Isekai', 'Fantasy', 'Military', 'Strategy', 'Reincarnation'];
+const FILTERS = ['All', 'Action', 'Adventure', 'Fantasy', 'Sci-Fi', 'Romance', 'Drama', 'Comedy'];
 
 export default function App() {
   const {
@@ -38,6 +40,7 @@ export default function App() {
   // Update document title dynamically
   useEffect(() => {
     document.title = 'WESEKAI';
+    refreshEliteImages();
   }, []);
 
   return (
@@ -46,7 +49,7 @@ export default function App() {
         {/* Ambient Background Glow */}
         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none" />
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 md:py-12 flex flex-col items-center relative z-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 md:py-12 pb-32 sm:pb-12 flex flex-col items-center relative z-10">
           <Header
             mediaType={mediaType}
             setMediaType={setMediaType}
@@ -71,6 +74,12 @@ export default function App() {
             tagPreferences={tagPreferences}
           />
         </div>
+
+        <MobileNav
+          setModalView={setModalView}
+          droppedCount={droppedList.length}
+          watchlistCount={watchlist.length}
+        />
 
         {/* Modals */}
         <AnimatePresence>

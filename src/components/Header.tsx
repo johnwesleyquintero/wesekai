@@ -53,8 +53,8 @@ export function Header({
           </div>
         </div>
 
-        {/* Action Buttons & Status */}
-        <div className="flex flex-wrap justify-center items-center gap-3">
+        {/* Action Buttons & Status - Hidden on mobile, moved to MobileNav */}
+        <div className="hidden sm:flex flex-wrap justify-center items-center gap-3">
           {/* Arsenal Level Badge */}
           <div className="flex items-center gap-3 px-4 py-2 bg-zinc-900/60 border border-zinc-800/50 rounded-2xl backdrop-blur-md">
             <Shield className={`w-4 h-4 ${levelInfo.color} animate-pulse`} />
@@ -70,16 +70,14 @@ export function Header({
             </div>
           </div>
 
-          <div className="h-8 w-px bg-zinc-800/50 mx-1 hidden sm:block" />
+          <div className="h-8 w-px bg-zinc-800/50 mx-1" />
 
           <button
             onClick={() => setModalView('telemetry')}
             className="group flex items-center gap-2 px-4 py-2 bg-zinc-900/40 border border-zinc-800/50 rounded-xl text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all backdrop-blur-sm"
           >
             <Activity className="w-4 h-4 text-emerald-500/70 group-hover:text-emerald-400 transition-colors" />
-            <span className="font-bold text-xs uppercase tracking-tight hidden sm:inline">
-              Telemetry
-            </span>
+            <span className="font-bold text-xs uppercase tracking-tight">Telemetry</span>
           </button>
 
           <button
@@ -87,9 +85,7 @@ export function Header({
             className="group flex items-center gap-2 px-4 py-2 bg-zinc-900/40 border border-zinc-800/50 rounded-xl text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all backdrop-blur-sm"
           >
             <Ban className="w-4 h-4 text-red-500/70 group-hover:text-red-400 transition-colors" />
-            <span className="font-bold text-xs uppercase tracking-tight hidden sm:inline">
-              Dropped
-            </span>
+            <span className="font-bold text-xs uppercase tracking-tight">Dropped</span>
             <span className="bg-zinc-800 group-hover:bg-red-500/20 px-1.5 py-0.5 rounded text-[10px] font-black min-w-[1.5rem] transition-colors">
               {droppedCount}
             </span>
@@ -100,9 +96,7 @@ export function Header({
             className="group flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-300 hover:text-white hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all backdrop-blur-sm"
           >
             <Library className="w-4 h-4 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
-            <span className="font-bold text-xs uppercase tracking-tight hidden sm:inline">
-              Arsenal
-            </span>
+            <span className="font-bold text-xs uppercase tracking-tight">Arsenal</span>
             <span className="bg-indigo-500/20 group-hover:bg-indigo-500/30 px-1.5 py-0.5 rounded text-[10px] font-black min-w-[1.5rem] transition-colors">
               {watchlistCount}
             </span>
@@ -121,7 +115,7 @@ export function Header({
             <button
               key={type}
               onClick={() => setMediaType(type)}
-              className={`relative px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 ${
+              className={`relative px-5 sm:px-8 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 ${
                 mediaType === type ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >

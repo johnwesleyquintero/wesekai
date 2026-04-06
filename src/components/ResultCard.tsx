@@ -194,7 +194,6 @@ export const ResultCard: FC<{
             src={recommendation.contentData.imageUrl}
             alt={recommendation.contentData.title}
             className="absolute inset-0 w-full h-full object-cover"
-            referrerPolicy="no-referrer"
             loading="lazy"
             decoding="async"
           />

@@ -76,7 +76,6 @@ export function AnimeListModal({
                     src={rec.contentData.imageUrl}
                     alt={rec.title}
                     className="w-20 h-28 sm:w-24 sm:h-32 object-cover rounded-xl shadow-md shrink-0"
-                    referrerPolicy="no-referrer"
                     loading="lazy"
                     decoding="async"
                   />

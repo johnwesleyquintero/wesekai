@@ -1,4 +1,5 @@
 import { UnifiedContent } from '../types';
+import { apiManager } from './api-manager';
 
 export const ELITE_ANIME: UnifiedContent[] = [
   {
@@ -160,3 +161,76 @@ export const ELITE_MANHWA: UnifiedContent[] = [
     year: 2021,
   },
 ];
+
+let lastRefreshTime = 0;
+const REFRESH_COOLDOWN = 1000 * 60 * 60; // 1 hour rate limit
+
+export async function refreshEliteImages(): Promise<void> {
+  const now = Date.now();
+  if (now - lastRefreshTime < REFRESH_COOLDOWN) {
+    console.log('Elite images refresh skipped (rate limit)');
+    return;
+  }
+  lastRefreshTime = now;
+
+  const malIds = ELITE_ANIME.map(a => {
+    const match = a.url.match(/\/anime\/(\d+)/);
+    return match ? match[1] : null;
+  }).filter(Boolean);
+
+  for (const id of malIds) {
+    try {
+      // apiManager already has retry/exponential backoff and throttling
+      const data = await apiManager.fetchWithRetry<{
+        data: { images: { webp?: { large_image_url: string } } };
+      }>(`https://api.jikan.moe/v4/anime/${id}`);
+      const newUrl = data.data?.images?.webp?.large_image_url;
+      if (newUrl) {
+        const elite = ELITE_ANIME.find(a => a.url.includes(`/anime/${id}`));
+        if (elite) elite.imageUrl = newUrl;
+      }
+    } catch (e) {
+      console.warn(`Failed to refresh image for anime ${id}, keeping original:`, e);
+    }
+  }
+
+  const aniListIds = ELITE_MANHWA.map(m => {
+    const match = m.url.match(/\/manga\/(\d+)/);
+    return match ? match[1] : null;
+  }).filter(Boolean);
+
+  if (aniListIds.length > 0) {
+    const query = `
+      query ($ids: [Int]) {
+        Page {
+          media(id_in: $ids, type: MANGA) {
+            id
+            coverImage {
+              large
+            }
+          }
+        }
+      }
+    `;
+
+    try {
+      const data = await apiManager.fetchWithRetry<{
+        data: { Page: { media: { id: number; coverImage: { large: string } }[] } };
+      }>('https://graphql.anilist.co', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables: { ids: aniListIds.map(Number) } }),
+      });
+
+      data.data?.Page?.media?.forEach(m => {
+        const elite = ELITE_MANHWA.find(item => item.url.includes(`/manga/${m.id}`));
+        if (elite && m.coverImage?.large) {
+          elite.imageUrl = m.coverImage.large;
+        }
+      });
+    } catch (e) {
+      console.warn('Failed to refresh images for elite manhwa, keeping originals:', e);
+    }
+  }
+}
+
