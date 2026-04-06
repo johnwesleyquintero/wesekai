@@ -1,15 +1,29 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Recommendation } from '../types';
 
+type LegacyRecommendation = Partial<Recommendation> & { 
+  malData?: {
+    title?: string;
+    tags?: string[];
+    [key: string]: unknown;
+  };
+  url?: string; 
+  title?: string;
+  tags?: string[];
+};
+
 /**
  * Migration helper for old localStorage data formats.
  * Normalizes different versions of recommendation objects to the current standard.
+ * @param data An array of unknown type, expected to be a list of recommendations from localStorage.
+ * @returns An array of `Recommendation` objects, normalized to the current schema.
+ *          Returns an empty array if the input is not an array or if an error occurs during migration.
  */
-const migrateData = (data: unknown[]): Recommendation[] => {
+export const migrateData = (data: unknown[]): Recommendation[] => {
   if (!Array.isArray(data)) return [];
 
   return data.filter(Boolean).map(item => {
-    const raw = item as any;
+    const raw = item as LegacyRecommendation;
 
     // Check if it's already in the new format
     if (raw.contentData) {

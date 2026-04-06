@@ -6,44 +6,7 @@ import { ELITE_ANIME, ELITE_MANHWA } from '../lib/elite';
 import { WESEKAI_CONSTANTS } from '../wesekai.constants';
 import { Recommendation, UnifiedContent } from '../types';
 import { recommendationReducer, initialState } from './useRecommendationReducer';
-
-/**
- * Helper to migrate old localStorage data and ensure consistency.
- */
-const migrateData = (data: unknown[]): Recommendation[] => {
-  if (!Array.isArray(data)) return [];
-  type LegacyItem = Partial<Recommendation> & { malData?: Record<string, unknown>; url?: string };
-  return (data as LegacyItem[]).filter(Boolean).map(item => {
-    if (!item.contentData) {
-      if (item.malData) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mal = item.malData as any;
-        return {
-          ...item,
-          contentData: {
-            ...mal,
-            type: 'anime',
-            tags: mal?.tags || item.tags || [],
-          },
-        } as Recommendation;
-      } else {
-        return {
-          ...item,
-          contentData: {
-            url: item.url || Math.random().toString(),
-            title: item.title || 'Unknown',
-            type: 'anime',
-            imageUrl: '',
-            score: 0,
-            synopsis: '',
-            tags: item.tags || [],
-          },
-        } as Recommendation;
-      }
-    }
-    return item as Recommendation;
-  });
-};
+import { migrateData } from './useLocalStorage';
 
 const STORAGE_KEYS = {
   WATCHLIST: 'wesekai-arsenal',
