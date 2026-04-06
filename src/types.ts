@@ -6,6 +6,7 @@ export interface UnifiedContent {
   synopsis: string;
   url: string;
   tags: string[];
+  year?: number;
 }
 
 export interface Recommendation {

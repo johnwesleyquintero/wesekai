@@ -162,10 +162,15 @@ export default function App() {
       const combined = [...eliteRecs, ...apiRecs];
       const uniqueRecs = Array.from(new Map(combined.map(item => [item.contentData.url, item])).values());
 
-      // 4. Sort: Elite first, then by WB Score
+      // 4. Sort: Elite first, then by Year, then by WB Score
       uniqueRecs.sort((a, b) => {
         if (a.isElite && !b.isElite) return -1;
         if (!a.isElite && b.isElite) return 1;
+        
+        const yearA = a.contentData.year || 0;
+        const yearB = b.contentData.year || 0;
+        if (yearA !== yearB) return yearB - yearA; // Newer first
+        
         return b.wbScore - a.wbScore;
       });
 
@@ -226,7 +231,14 @@ export default function App() {
 
       const tagMatchScore = Math.max(0, Math.min(10, 5 + rawTagScore));
 
-      let finalScore = (rec.wbScore * 0.45) + (rec.contentData.score * 0.25) + (tagMatchScore * 0.20) + (rec.isElite ? 2.0 : 0);
+      // Recency Bonus: Prioritize newer anime
+      const currentYear = new Date().getFullYear();
+      const recYear = rec.contentData.year || 2015; // Default to somewhat old if unknown
+      const age = Math.max(0, currentYear - recYear);
+      // Up to +2.5 for brand new, drops to 0 for 10+ years old
+      const recencyBonus = Math.max(0, 2.5 - (age * 0.25));
+
+      let finalScore = (rec.wbScore * 0.40) + (rec.contentData.score * 0.20) + (tagMatchScore * 0.20) + recencyBonus + (rec.isElite ? 2.0 : 0);
 
       finalScore *= driftMultiplier; // Apply Drift Engine Modifiers
       // -----------------------
@@ -242,8 +254,8 @@ export default function App() {
         bestScore = finalScore;
         
         // Calculate Confidence Score (0 to 1)
-        // Max theoretical base score is ~11.5
-        const normalizedScore = Math.min(1, finalScore / 11.5);
+        // Max theoretical base score is ~12.5
+        const normalizedScore = Math.min(1, finalScore / 12.5);
         const confidenceScore = Math.max(0, Math.min(1, normalizedScore * driftMultiplier));
         
         bestRec = { ...rec, confidenceScore, driftMultiplier };

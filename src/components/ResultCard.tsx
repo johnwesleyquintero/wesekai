@@ -125,10 +125,17 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
             </div>
           </div>
 
-          {/* Title */}
-          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 leading-tight text-white drop-shadow-md">
-            {recommendation.contentData.title}
-          </h2>
+          {/* Title & Year */}
+          <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-4 mb-6 sm:mb-8">
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold leading-tight text-white drop-shadow-md">
+              {recommendation.contentData.title}
+            </h2>
+            {recommendation.contentData.year && (
+              <span className="text-xl sm:text-2xl font-display font-medium text-zinc-500 shrink-0">
+                ({recommendation.contentData.year})
+              </span>
+            )}
+          </div>
 
           {/* RPG Stats / Scores */}
           <div className="flex flex-wrap items-center gap-4 sm:gap-5 mb-8 sm:mb-10">
@@ -189,8 +196,8 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
                 rel="noopener noreferrer"
                 className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-indigo-300 transition-colors"
               >
+                <ExternalLink className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
                 Access Database Entry
-                <ExternalLink className="w-4 h-4 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
               </a>
               <a 
                 href={getYouTubeSearchUrl(recommendation.contentData.title, recommendation.contentData.type)}

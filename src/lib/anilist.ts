@@ -47,6 +47,9 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
             coverImage {
               large
             }
+            startDate {
+              year
+            }
             tags {
               name
             }
@@ -191,7 +194,8 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
         score: normalizedScore,
         synopsis: cleanSynopsis,
         url: manhwa.siteUrl,
-        tags: sortedTags
+        tags: sortedTags,
+        year: manhwa.startDate?.year
       };
     });
   } catch (error) {
