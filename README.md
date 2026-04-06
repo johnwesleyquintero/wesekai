@@ -1,66 +1,93 @@
-# WESEKAI ⚔️
+# WESEKAI
 
-**Real-time Preference Vector Field Simulator with Closed-Loop Behavioral Feedback.**
+> **Real-time Preference Vector Field Simulator with Closed-Loop Behavioral Feedback.**
 
-WESEKAI is a **living preference ecosystem** designed to model how human taste drifts over time. Disguised as an elite Isekai anime and manhwa recommender, it actively learns, adapts, and visualizes your taste vectors in real-time.
+WESEKAI is an advanced recommendation engine designed to model the evolution of human taste. While specialized in Isekai anime and manhwa, the core architecture functions as a living preference ecosystem that actively learns, adapts, and visualizes user taste vectors through real-time behavioral feedback.
+
+## ✨ Key Features
+
+- **Behavioral Learning Engine:** Implements a damped learning algorithm to map user preferences without hitting "taste prison" local minima.
+- **Dual-Source Aggregation:** Real-time data fetching from MyAnimeList (Jikan API) and AniList (GraphQL).
+- **World-Building Analysis:** Proprietary scoring system that evaluates narrative depth based on thematic tag density.
+- **Explainable AI (XAI):** Integrated "Wesley Intelligence" provides natural language reasoning for every recommendation.
+- **Dynamic UI/UX:** Motion-driven interface where animation physics correspond to recommendation confidence levels.
 
 ## 🧠 The Architecture
 
-WESEKAI operates on a 5-layer cognitive architecture:
+The system operates on a sophisticated five-layer cognitive model:
 
-### 1. Intelligence Layer (The Engine)
+### 1. Intelligence Layer
 
-- **Omakase Selection Hook:** The core logic is encapsulated in `useRecommendationEngine`, managing complex state and behavioral feedback loops.
-- **Drift Engine:** Detects when you wander into "frozen branches" (genres you dislike) and hierarchically suppresses them using multi-stage multipliers.
-- **Optimized Semantic Extraction:** Uses pre-compiled regex in `tag-utils.ts` to parse synopses and descriptions across a robust synonym dictionary (e.g., mapping "realm" to "kingdom", "regressor" to "regression").
-- **Damped Learning:** Uses saturation curves (`1 / (1 + |weight|)`) to prevent "taste prison" collapse while maintaining long-term stability.
+- **Vector Management:** Encapsulated in `useRecommendationEngine`, managing complex state transitions and feedback loops.
+- **Drift Suppression:** Identifies "frozen branches" (disliked genres) to hierarchically suppress irrelevant content using multi-stage multipliers.
+- **Semantic Extraction:** Utilizes pre-compiled regex patterns to normalize disparate metadata into a unified tag system.
+- **Damped Learning:** Employs saturation curves (`1 / (1 + |weight|)`) to ensure long-term profile stability.
 
-### 2. Data Layer (The Pipeline)
+### 2. Data Layer
 
-- **Dual-Core Sourcing:** Seamlessly aggregates data from **Jikan API (MyAnimeList)** for Anime and **AniList GraphQL API** for trending Manhwa.
-- **Aggressive Caching:** Implements in-memory caching for API responses to ensure instant filter switching and respect external rate limits.
-- **Graceful Fallback System:** If external APIs fail, the system seamlessly falls back to an internal, curated `ELITE_ANIME` and `ELITE_MANHWA` dataset.
-- **Unified Schema:** Normalizes disparate data sources into a consistent `UnifiedContent` format for seamless processing.
+- **API Integration:** Parallel fetching from Jikan (REST) and AniList (GraphQL).
+- **Resiliency Layer:** Implements automated fallbacks to a curated `ELITE` dataset in the event of upstream API rate-limiting or downtime.
+- **Schema Normalization:** Transforms heterogeneous API responses into a strictly typed `UnifiedContent` interface.
 
-### 3. Dynamics Layer (The Flow)
+### 3. Dynamics Layer
 
-- **Confidence-Driven Scoring:** Recommendations are weighted by World-Building (WB) scores, recency bonuses, and tag synergy.
-- **Multi-Timescale Memory:** Tracks session-specific "shown" counts and "skipped" history to avoid repetition while maintaining a long-term preference profile.
+- **Scoring Heuristics:** Calculates a composite score based on World-Building depth, community rating, recency, and tag synergy.
+- **Multi-Timescale Memory:** Distinguishes between session-specific skips and long-term "dropped" status to maintain content freshness.
 
-### 4. Perception Layer (The Feel)
+### 4. Perception Layer
 
-- **Data-Driven Motion:** Animations are driven by system confidence. High-confidence hits snap in; low-confidence edges glide in with heavy blur.
-- **Action Semantics:**
-  - 🔵 **WATCH/READ:** Lock-in and glow (Core Orbit Reinforcement)
-  - ⚪ **SKIP:** Smooth frictionless slide (Accelerated Decay)
-  - 🔴 **DROP:** Heavy downward dissolve (Instant Freeze)
+- **Confidence-Driven Motion:** Animation parameters (blur, scale, spring stiffness) are dynamically adjusted based on the engine's recommendation confidence.
+- **Behavioral Semantics:**
+  - **Watch/Read:** Reinforces the current preference orbit with a localized glow effect.
+  - **Skip:** Applies accelerated decay to tags without hard suppression.
+  - **Drop:** Executes a "hard freeze" on the content's specific vector, preventing future occurrences.
 
-### 5. Telemetry Layer (The Mirror)
+### 5. Telemetry Layer
 
-- **Live Vector HUD:** A glassmorphic dashboard that visualizes the engine's internal weights in real-time.
-- **Resilient Persistence:** State is synchronized to `localStorage` with built-in error handling and automated data migration for schema updates.
+- **Live Vector HUD:** A glassmorphic dashboard visualizing internal preference weights and telemetry in real-time.
+- **Persistence Engine:** Synchronizes state to `localStorage` with an automated migration layer for schema versioning.
 
-## 🚀 Getting Started
+## 🛠️ Tech Stack
+
+- **Core:** React 19, Vite 6, TypeScript
+- **State:** Custom Reducer-based Engine with Behavioral Hooks
+- **Styling:** Tailwind CSS 4 (Atomic CSS)
+- **Motion:** Motion (`motion/react`)
+- **Data:** Jikan API v4, AniList GraphQL
+
+## 🚀 Installation & Setup
 
 ```bash
 # Install dependencies
 npm install
 
-# Start the intelligence layer
+# Start the development server
 npm run dev
+```
 
-# Run quality checks (Format, Lint, Typecheck)
+### Environment Variables
+
+To enable dynamic trailer fetching, create a `.env` file in the root directory:
+
+```env
+VITE_YOUTUBE_API_KEY=your_api_key_here
+```
+
+## 🧪 Quality Assurance
+
+```bash
+# Run comprehensive quality checks
 npm run check
 ```
 
-## 🛠️ Tech Stack
+Includes:
+- **Formatting:** Prettier
+- **Linting:** ESLint with TypeScript strict rules
+- **Type-Checking:** TypeScript Compiler (tsc)
 
-- **Framework:** React 19 + Vite 6
-- **Styling:** Tailwind CSS 4
-- **Motion Physics:** Motion (`motion/react`)
-- **Icons:** Lucide React
-- **Data Sources:** Jikan API (V4), AniList GraphQL API
-- **External Integrations:** YouTube Data API (for dynamic trailers)
+## 📜 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
