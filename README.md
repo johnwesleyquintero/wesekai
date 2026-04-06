@@ -2,7 +2,7 @@
 
 **Real-time Preference Vector Field Simulator with Closed-Loop Behavioral Feedback.**
 
-WESEKAI is not a standard recommendation app. It is a **living preference ecosystem** designed to model how human taste drifts over time. Disguised as an elite Isekai anime and manhwa recommender, it actively learns, adapts, and visualizes your taste vectors in real-time.
+WESEKAI is a **living preference ecosystem** designed to model how human taste drifts over time. Disguised as an elite Isekai anime and manhwa recommender, it actively learns, adapts, and visualizes your taste vectors in real-time.
 
 ## 🧠 The Architecture
 
@@ -10,34 +10,35 @@ WESEKAI operates on a 5-layer cognitive architecture:
 
 ### 1. Intelligence Layer (The Engine)
 
-- **Omakase Selection Loop:** Eliminates decision fatigue by serving exactly one highly-calculated recommendation at a time.
-- **Drift Engine:** Detects when you wander into "frozen branches" (genres you dislike) and hierarchically suppresses them.
-- **Synonym-Aware Semantic Extraction:** Parses synopses and descriptions using a robust synonym dictionary (e.g., mapping "realm" to "kingdom", "regressor" to "regression") to deeply understand thematic elements beyond surface-level tags.
-- **Damped Learning:** Uses saturation curves (`effect = baseWeight * (1 / (1 + currentAbsoluteWeight))`) to prevent overfitting and "taste prison" collapse.
+- **Omakase Selection Hook:** The core logic is encapsulated in `useRecommendationEngine`, managing complex state and behavioral feedback loops.
+- **Drift Engine:** Detects when you wander into "frozen branches" (genres you dislike) and hierarchically suppresses them using multi-stage multipliers.
+- **Optimized Semantic Extraction:** Uses pre-compiled regex in `tag-utils.ts` to parse synopses and descriptions across a robust synonym dictionary (e.g., mapping "realm" to "kingdom", "regressor" to "regression").
+- **Damped Learning:** Uses saturation curves (`1 / (1 + |weight|)`) to prevent "taste prison" collapse while maintaining long-term stability.
 
 ### 2. Data Layer (The Pipeline)
 
-- **Dual-Core Sourcing:** Seamlessly aggregates data from both the **Jikan API (MyAnimeList)** for Anime and the **AniList GraphQL API** for trending Manhwa.
-- **Graceful Fallback System:** If external APIs fail due to rate limits or downtime, the system seamlessly falls back to an internal, curated `ELITE_ANIME` dataset, ensuring zero downtime.
-- **Media Type Filtering:** Instantly pivot the engine's focus between Anime, Manhwa, or a unified feed.
+- **Dual-Core Sourcing:** Seamlessly aggregates data from **Jikan API (MyAnimeList)** for Anime and **AniList GraphQL API** for trending Manhwa.
+- **Aggressive Caching:** Implements in-memory caching for API responses to ensure instant filter switching and respect external rate limits.
+- **Graceful Fallback System:** If external APIs fail, the system seamlessly falls back to an internal, curated `ELITE_ANIME` and `ELITE_MANHWA` dataset.
+- **Unified Schema:** Normalizes disparate data sources into a consistent `UnifiedContent` format for seamless processing.
 
 ### 3. Dynamics Layer (The Flow)
 
-- **Exploration Pressure:** Injects bounded randomness based on system confidence. If the system is unsure, it explores adjacent semantic spaces.
-- **Multi-Timescale Memory:** Tracks volatile session moods, seasonal trends, and stable core identity.
+- **Confidence-Driven Scoring:** Recommendations are weighted by World-Building (WB) scores, recency bonuses, and tag synergy.
+- **Multi-Timescale Memory:** Tracks session-specific "shown" counts and "skipped" history to avoid repetition while maintaining a long-term preference profile.
 
 ### 4. Perception Layer (The Feel)
 
-- **Confidence-Based Motion:** Animations are not decorative; they are data-driven. A high-confidence recommendation snaps in instantly. A low-confidence edge-case glides in slowly with a heavy blur.
+- **Data-Driven Motion:** Animations are driven by system confidence. High-confidence hits snap in; low-confidence edges glide in with heavy blur.
 - **Action Semantics:**
   - 🔵 **WATCH/READ:** Lock-in and glow (Core Orbit Reinforcement)
   - ⚪ **SKIP:** Smooth frictionless slide (Accelerated Decay)
-  - 🔴 **DROP:** Heavy downward dissolve with sepia filter (Instant Freeze)
+  - 🔴 **DROP:** Heavy downward dissolve (Instant Freeze)
 
 ### 5. Telemetry Layer (The Mirror)
 
-- **Live Vector HUD:** A glassmorphic dashboard that visualizes the engine's brain in real-time.
-- Watch your **Core Orbit (Pull)** and **Frozen Branches (Push)** shift as you interact with the system.
+- **Live Vector HUD:** A glassmorphic dashboard that visualizes the engine's internal weights in real-time.
+- **Resilient Persistence:** State is synchronized to `localStorage` with built-in error handling and automated data migration for schema updates.
 
 ## 🚀 Getting Started
 
@@ -47,16 +48,19 @@ npm install
 
 # Start the intelligence layer
 npm run dev
+
+# Run quality checks (Format, Lint, Typecheck)
+npm run check
 ```
 
 ## 🛠️ Tech Stack
 
-- **Framework:** React 18 + Vite
-- **Styling:** Tailwind CSS
-- **Motion Physics:** Framer Motion (`motion/react`)
+- **Framework:** React 19 + Vite 6
+- **Styling:** Tailwind CSS 4
+- **Motion Physics:** Motion (`motion/react`)
 - **Icons:** Lucide React
-- **Data Sources:** Jikan API (MyAnimeList), AniList GraphQL API
-- **External Integrations:** MangaDex, Aniwatch, YouTube
+- **Data Sources:** Jikan API (V4), AniList GraphQL API
+- **External Integrations:** YouTube Data API (for dynamic trailers)
 
 ---
 
