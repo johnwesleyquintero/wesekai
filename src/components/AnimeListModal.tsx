@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'motion/react';
 import { Library, Ban, X, Globe, Star, PlayCircle, Trash2, Youtube } from 'lucide-react';
 import { Recommendation } from '../types';

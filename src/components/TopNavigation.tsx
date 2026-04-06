@@ -1,4 +1,3 @@
-import React from 'react';
 import { Activity, Ban, Library } from 'lucide-react';
 
 interface TopNavigationProps {

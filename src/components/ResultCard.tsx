@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { useState, memo, FC } from 'react';
+import { motion, Variants } from 'motion/react';
 import {
   Crown,
   Ban,
@@ -19,7 +19,7 @@ import { Recommendation } from '../types';
 import { getYouTubeSearchUrl, fetchYouTubeTrailerId } from '../lib/youtube';
 import { TrailerModal } from './TrailerModal';
 
-export const cardVariants = {
+export const cardVariants: Variants = {
   initial: ({ confidence }: { confidence: number }) => {
     if (confidence > 0.8) return { opacity: 0, scale: 0.92, y: 0, filter: 'blur(0px)' };
     if (confidence > 0.5) return { opacity: 0, scale: 0.95, y: 20, filter: 'blur(4px)' };
@@ -76,12 +76,12 @@ export const cardVariants = {
   },
 };
 
-export const ResultCard: React.FC<{
+export const ResultCard: FC<{
   recommendation: Recommendation;
   onWatch: () => void;
   onSkip: () => void;
   onDrop: () => void;
-}> = React.memo(({ recommendation, onWatch, onSkip, onDrop }) => {
+}> = memo(({ recommendation, onWatch, onSkip, onDrop }) => {
   const [copied, setCopied] = useState(false);
   const [localExit, setLocalExit] = useState('none');
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);

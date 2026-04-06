@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { fetchTopAnimeList } from './lib/mal';
 import { fetchTopManhwa } from './lib/anilist';
@@ -89,7 +89,7 @@ export default function App() {
 
   // Update document title dynamically
   useEffect(() => {
-    document.title = 'WESEKAI | Intelligence Layer';
+    document.title = 'WESEKAI';
   }, []);
 
   const fetchRecommendations = async () => {

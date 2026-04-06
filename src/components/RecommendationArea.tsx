@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Cpu } from 'lucide-react';
 import { SkeletonCard } from './SkeletonCard';
