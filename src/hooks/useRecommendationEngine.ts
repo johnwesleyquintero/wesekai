@@ -84,7 +84,6 @@ export function useRecommendationEngine() {
     sessionMemory,
     tagPreferences,
     isThinking,
-    shouldRefetch,
   } = state;
 
   // Persistence
@@ -190,11 +189,8 @@ export function useRecommendationEngine() {
   }, [activeFilter, mediaType]);
 
   useEffect(() => {
-    if (shouldRefetch) {
-      fetchRecommendations();
-      dispatch({ type: 'SET_SHOULD_REFETCH', payload: false });
-    }
-  }, [fetchRecommendations, shouldRefetch]);
+    fetchRecommendations();
+  }, [fetchRecommendations]);
 
   const computeNext = useCallback(() => {
     if (candidatePool.length === 0) return;
@@ -264,9 +260,9 @@ export function useRecommendationEngine() {
       });
     } else {
       dispatch({ type: 'SET_CURRENT_REC', payload: null });
-      dispatch({ type: 'SET_SHOULD_REFETCH', payload: true });
+      fetchRecommendations();
     }
-  }, [candidatePool, watchlist, droppedList, sessionMemory, tagPreferences]);
+  }, [candidatePool, watchlist, droppedList, sessionMemory, tagPreferences, fetchRecommendations]);
 
   const triggerNext = useCallback(() => {
     dispatch({ type: 'SET_CURRENT_REC', payload: null });
