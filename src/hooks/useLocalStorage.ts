@@ -7,15 +7,15 @@ import { Recommendation } from '../types';
  */
 const migrateData = (data: unknown[]): Recommendation[] => {
   if (!Array.isArray(data)) return [];
-  
+
   return data.filter(Boolean).map(item => {
     const raw = item as any;
-    
+
     // Check if it's already in the new format
     if (raw.contentData) {
       return raw as Recommendation;
     }
-    
+
     // Migration logic for malData (older format)
     if (raw.malData) {
       return {
@@ -31,7 +31,7 @@ const migrateData = (data: unknown[]): Recommendation[] => {
         isElite: !!raw.isElite,
       } as Recommendation;
     }
-    
+
     // Fallback for very basic objects
     return {
       title: raw.title || 'Unknown',
@@ -57,7 +57,7 @@ export function useLocalStorage<T>(key: string, initialValue: T, migrate = false
     try {
       const saved = localStorage.getItem(key);
       if (!saved) return initialValue;
-      
+
       const parsed = JSON.parse(saved);
       if (migrate && Array.isArray(parsed)) {
         return migrateData(parsed) as unknown as T;

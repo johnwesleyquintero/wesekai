@@ -1,5 +1,8 @@
 import { WESEKAI_CONSTANTS } from '../wesekai.constants';
 import { UnifiedContent } from '../types';
+import { extractTagsFromText, finalizeTags, mergeTagWeights } from './tag-utils';
+
+const animeCache = new Map<string, UnifiedContent[]>();
 
 // Priority MAL Genre IDs:
 // 62: Isekai, 73: Reincarnation, 38: Military, 11: Strategy Game, 10: Fantasy
@@ -76,6 +79,11 @@ interface MalAnime {
 }
 
 export async function fetchTopAnimeList(filter: string = 'All'): Promise<UnifiedContent[]> {
+  const cacheKey = `mal-${filter}`;
+  if (animeCache.has(cacheKey)) {
+    return animeCache.get(cacheKey)!;
+  }
+
   try {
     // Filter the priority queries based on the selected filter
     let validQueries = priorityQueries;
@@ -157,9 +165,8 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<Unified
         return !hasBannedGenre && !hasBannedTheme && !hasBannedTitle;
       });
 
-      return filteredData.map(anime => {
+      const result = filteredData.map(anime => {
         const tagWeights = new Map<string, number>();
-        const synopsisLower = (anime.synopsis || '').toLowerCase();
 
         const addTag = (tag: string, weight: number) => {
           tagWeights.set(tag, (tagWeights.get(tag) || 0) + weight);
@@ -178,63 +185,15 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<Unified
           if (t.name === 'Video Game') addTag('games', 5);
         });
 
-        // 2. Keyword Extraction from Synopsis (Frequency-based Weight with Synonyms)
-        const keywordSynonyms: Record<string, string[]> = {
-          kingdom: ['kingdom', 'realm', 'monarchy', 'domain'],
-          economy: ['economy', 'economics', 'finance', 'commerce', 'capitalism', 'market'],
-          politics: ['politics', 'political', 'nobility', 'aristocracy', 'faction', 'court'],
-          nation: ['nation', 'country', 'state', 'territory'],
-          strategy: ['strategy', 'tactics', 'strategic', 'tactical', 'planning'],
-          diplomacy: ['diplomacy', 'negotiation', 'treaty', 'alliance', 'ambassador'],
-          rebuild: ['rebuild', 'reconstruction', 'restore', 'revive', 'rebuilding'],
-          science: ['science', 'scientific', 'physics', 'chemistry'],
-          technology: ['technology', 'tech', 'engineering', 'industrial', 'modern'],
-          trade: ['trade', 'trading', 'commerce', 'business', 'sell', 'buy', 'merchant'],
-          agriculture: ['agriculture', 'farming', 'crop', 'harvest', 'farm', 'cultivation'],
-          society: ['society', 'culture', 'civilization'],
-          npc: ['npc', 'non-player character', 'villager'],
-          guild: ['guild', 'clan', 'faction', 'syndicate'],
-          systems: ['systems', 'game system', 'status screen', 'leveling', 'stats'],
-          conquest: ['conquest', 'conquer', 'invasion', 'warfare', 'domination'],
-          invention: ['invention', 'invent', 'create', 'innovation', 'gadget'],
-          community: ['community', 'settlement', 'town', 'people'],
-          village: ['village', 'town', 'hamlet', 'settlement'],
-          merchants: ['merchants', 'merchant', 'trader', 'peddler'],
-          civilization: ['civilization', 'culture', 'society'],
-          empire: ['empire', 'imperial', 'emperor', 'empress'],
-          magic: ['magic', 'magical', 'spell', 'sorcery', 'wizardry', 'mana'],
-          'demon lord': ['demon lord', 'maou', 'demon king'],
-          management: ['management', 'manage', 'administration', 'governance', 'oversee'],
-          crafting: ['crafting', 'craft', 'blacksmith', 'alchemy', 'synthesize', 'forging'],
-        };
-
-        Object.entries(keywordSynonyms).forEach(([coreTag, synonyms]) => {
-          let totalMatches = 0;
-          synonyms.forEach(syn => {
-            const regex = new RegExp(`\\b${syn}\\b`, 'gi');
-            const matches = synopsisLower.match(regex);
-            if (matches) {
-              totalMatches += matches.length;
-            }
-          });
-          if (totalMatches > 0) {
-            addTag(coreTag, totalMatches);
-          }
-        });
+        // 2. Keyword Extraction from Synopsis
+        const synopsisTags = extractTagsFromText(anime.synopsis || '');
+        mergeTagWeights(tagWeights, synopsisTags);
 
         // Fallback tags if none found
-        if (tagWeights.size === 0) {
-          addTag('adventure', 1);
-        }
-
-        // Sort tags by weight descending and take top 6
-        const sortedTags = Array.from(tagWeights.entries())
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 6)
-          .map(entry => entry[0]);
+        const sortedTags = finalizeTags(tagWeights, 6, 'adventure');
 
         return {
-          type: 'anime',
+          type: 'anime' as const,
           title: anime.title_english || anime.title,
           imageUrl: anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url || '',
           score: anime.score || 0,
@@ -247,6 +206,9 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<Unified
           trailerYoutubeId: anime.trailer?.youtube_id || undefined,
         };
       });
+
+      animeCache.set(cacheKey, result);
+      return result;
     }
     return [];
   } catch (error) {

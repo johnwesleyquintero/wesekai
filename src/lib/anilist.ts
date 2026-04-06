@@ -1,5 +1,8 @@
 import { WESEKAI_CONSTANTS } from '../wesekai.constants';
 import { UnifiedContent } from '../types';
+import { extractTagsFromText, finalizeTags, mergeTagWeights } from './tag-utils';
+
+const manhwaCache = new Map<string, UnifiedContent[]>();
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -62,6 +65,11 @@ interface AniListMedia {
 }
 
 export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedContent[]> {
+  const cacheKey = `anilist-${filter}`;
+  if (manhwaCache.has(cacheKey)) {
+    return manhwaCache.get(cacheKey)!;
+  }
+
   try {
     // AniList GraphQL Query
     // We fetch trending manhwa (countryOfOrigin: "KR")
@@ -142,9 +150,8 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
       return true;
     });
 
-    return filteredData.map(manhwa => {
+    const result = filteredData.map(manhwa => {
       const tagWeights = new Map<string, number>();
-      const descriptionLower = (manhwa.description || '').toLowerCase();
 
       const addTag = (tag: string, weight: number) => {
         tagWeights.set(tag, (tagWeights.get(tag) || 0) + weight);
@@ -162,69 +169,12 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
         addTag(t.name.toLowerCase(), 3);
       });
 
-      // 2. Keyword Extraction from Description (Frequency-based Weight with Synonyms)
-      const keywordSynonyms: Record<string, string[]> = {
-        kingdom: ['kingdom', 'realm', 'monarchy', 'domain'],
-        economy: ['economy', 'economics', 'finance', 'commerce', 'capitalism', 'market'],
-        politics: ['politics', 'political', 'nobility', 'aristocracy', 'faction', 'court'],
-        nation: ['nation', 'country', 'state', 'territory'],
-        strategy: ['strategy', 'tactics', 'strategic', 'tactical', 'planning'],
-        diplomacy: ['diplomacy', 'negotiation', 'treaty', 'alliance', 'ambassador'],
-        rebuild: ['rebuild', 'reconstruction', 'restore', 'revive', 'rebuilding'],
-        science: ['science', 'scientific', 'physics', 'chemistry'],
-        technology: ['technology', 'tech', 'engineering', 'industrial', 'modern'],
-        trade: ['trade', 'trading', 'commerce', 'business', 'sell', 'buy', 'merchant'],
-        agriculture: ['agriculture', 'farming', 'crop', 'harvest', 'farm', 'cultivation'],
-        society: ['society', 'culture', 'civilization'],
-        npc: ['npc', 'non-player character', 'villager'],
-        guild: ['guild', 'clan', 'faction', 'syndicate'],
-        systems: ['systems', 'game system', 'status screen', 'leveling', 'stats'],
-        conquest: ['conquest', 'conquer', 'invasion', 'warfare', 'domination'],
-        invention: ['invention', 'invent', 'create', 'innovation', 'gadget'],
-        community: ['community', 'settlement', 'town', 'people'],
-        village: ['village', 'town', 'hamlet', 'settlement'],
-        merchants: ['merchants', 'merchant', 'trader', 'peddler'],
-        civilization: ['civilization', 'culture', 'society'],
-        empire: ['empire', 'imperial', 'emperor', 'empress'],
-        magic: ['magic', 'magical', 'spell', 'sorcery', 'wizardry', 'mana'],
-        'demon lord': ['demon lord', 'maou', 'demon king'],
-        management: ['management', 'manage', 'administration', 'governance', 'oversee'],
-        crafting: ['crafting', 'craft', 'blacksmith', 'alchemy', 'synthesize', 'forging'],
-        system: ['system', 'status window', 'level up', 'notification'],
-        regression: [
-          'regression',
-          'regressor',
-          'returner',
-          'time travel',
-          'past life',
-          'second chance',
-        ],
-        reincarnation: ['reincarnation', 'reincarnated', 'rebirth', 'isekai', 'transmigration'],
-        tower: ['tower', 'climb', 'floor', 'obelisk'],
-        hunter: ['hunter', 'awakened', 'awakening', 'gate', 'portal'],
-        dungeon: ['dungeon', 'labyrinth', 'raid', 'boss'],
-        player: ['player', 'gamer', 'constellation', 'sponsor'],
-      };
-
-      Object.entries(keywordSynonyms).forEach(([coreTag, synonyms]) => {
-        let totalMatches = 0;
-        synonyms.forEach(syn => {
-          const regex = new RegExp(`\\b${syn}\\b`, 'gi');
-          const matches = descriptionLower.match(regex);
-          if (matches) {
-            totalMatches += matches.length;
-          }
-        });
-        if (totalMatches > 0) {
-          addTag(coreTag, totalMatches);
-        }
-      });
+      // 2. Keyword Extraction from Description
+      const descriptionTags = extractTagsFromText(manhwa.description || '');
+      mergeTagWeights(tagWeights, descriptionTags);
 
       // Sort tags by weight descending and take top 6
-      const sortedTags = Array.from(tagWeights.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 6)
-        .map(entry => entry[0]);
+      const sortedTags = finalizeTags(tagWeights, 6);
 
       // Normalize AniList score (0-100) to MAL score (0-10)
       const normalizedScore = manhwa.averageScore ? manhwa.averageScore / 10 : 0;
@@ -236,7 +186,7 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
       );
 
       return {
-        type: 'manhwa',
+        type: 'manhwa' as const,
         title: manhwa.title?.english || manhwa.title?.romaji || 'Unknown Title',
         imageUrl: manhwa.coverImage?.large || '',
         score: normalizedScore,
@@ -247,6 +197,9 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
         trailerYoutubeId: manhwa.trailer?.site === 'youtube' ? manhwa.trailer.id : undefined,
       };
     });
+
+    manhwaCache.set(cacheKey, result);
+    return result;
   } catch (error) {
     console.error('Failed to fetch manhwa list:', error);
     return [];
