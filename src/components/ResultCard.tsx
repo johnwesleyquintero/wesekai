@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Crown, Ban, FastForward, Bookmark, Globe, Info, Star, ExternalLink, PlayCircle, Check, Copy, Youtube } from 'lucide-react';
 import { Recommendation } from '../types';
 import { getYouTubeSearchUrl } from '../lib/youtube';
+import { TrailerModal } from './TrailerModal';
 
 export const cardVariants = {
   initial: ({ confidence }: { confidence: number }) => {
@@ -26,6 +27,7 @@ export const cardVariants = {
 export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () => void, onSkip: () => void, onDrop: () => void }> = React.memo(({ recommendation, onWatch, onSkip, onDrop }) => {
   const [copied, setCopied] = useState(false);
   const [localExit, setLocalExit] = useState('none');
+  const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   
   const confidence = recommendation.confidenceScore || 0.5;
   const isSuppressed = (recommendation.driftMultiplier || 1) < 1;
@@ -199,15 +201,25 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
                 <ExternalLink className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
                 Access Database Entry
               </a>
-              <a 
-                href={getYouTubeSearchUrl(recommendation.contentData.title, recommendation.contentData.type)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-red-400 transition-colors"
-              >
-                <Youtube className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
-                Watch Recap
-              </a>
+              {recommendation.contentData.trailerYoutubeId ? (
+                <button 
+                  onClick={() => setIsTrailerOpen(true)}
+                  className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-red-400 transition-colors"
+                >
+                  <Youtube className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
+                  Watch Trailer
+                </button>
+              ) : (
+                <a 
+                  href={getYouTubeSearchUrl(recommendation.contentData.title, recommendation.contentData.type)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-red-400 transition-colors"
+                >
+                  <Youtube className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
+                  Watch Recap
+                </a>
+              )}
               <a 
                 href={recommendation.contentData.type === 'manhwa' 
                   ? `https://mangadex.org/titles?q=${encodeURIComponent(recommendation.contentData.title)}`
@@ -230,6 +242,14 @@ export const ResultCard: React.FC<{ recommendation: Recommendation, onWatch: () 
           </div>
         </div>
       </div>
+
+      {recommendation.contentData.trailerYoutubeId && (
+        <TrailerModal 
+          youtubeId={recommendation.contentData.trailerYoutubeId}
+          isOpen={isTrailerOpen}
+          onClose={() => setIsTrailerOpen(false)}
+        />
+      )}
     </motion.div>
   );
 });

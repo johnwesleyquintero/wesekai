@@ -7,6 +7,7 @@ export interface UnifiedContent {
   url: string;
   tags: string[];
   year?: number;
+  trailerYoutubeId?: string;
 }
 
 export interface Recommendation {

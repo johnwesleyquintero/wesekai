@@ -62,3 +62,46 @@ export const ELITE_ANIME: UnifiedContent[] = [
     year: 2017
   }
 ];
+
+export const ELITE_MANHWA: UnifiedContent[] = [
+  {
+    type: 'manhwa',
+    title: "Solo Leveling",
+    imageUrl: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx105398-b673VNtzbRw5.jpg",
+    score: 8.9,
+    synopsis: "In a world where hunters with magical powers must battle deadly monsters to protect the human race from certain annihilation, a notoriously weak hunter named Sung Jinwoo finds himself in a seemingly endless struggle for survival. One day, after narrowly surviving an overwhelmingly powerful double dungeon that nearly wipes out his entire party, a mysterious program called the System chooses him as its sole player and in turn, gives him the extremely rare ability to level up in strength.",
+    url: "https://anilist.co/manga/105398/Na-Honjaman-Level-Up",
+    tags: ["action", "fantasy", "system", "hunter", "dungeon", "player"],
+    year: 2018
+  },
+  {
+    type: 'manhwa',
+    title: "Omniscient Reader's Viewpoint",
+    imageUrl: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx119257-2bK1B3b91A4E.jpg",
+    score: 8.8,
+    synopsis: "Dokja was an average office worker whose sole interest was reading his favorite web novel 'Three Ways to Survive the Apocalypse.' But when the novel suddenly becomes reality, he is the only person who knows how the world will end. Armed with this realization, Dokja uses his understanding to change the course of the story, and the world, as he knows it.",
+    url: "https://anilist.co/manga/119257/Jeonjijeok-Dokja-Sijeom",
+    tags: ["action", "fantasy", "system", "survival", "player", "constellation"],
+    year: 2020
+  },
+  {
+    type: 'manhwa',
+    title: "Return of the Mount Hua Sect",
+    imageUrl: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx129750-yR4SjI5z1mXk.jpg",
+    score: 8.6,
+    synopsis: "Chung Myung, the 13th generation disciple of the Mount Hua Sect, is one of the three great swordsmen, Plum Blossom Sword Saint. After defeating the Heavenly Demon, he breathes his last on the summit of the Hundred Thousand Great Mountains. Jumping 100 years into the future, he is reborn in the body of a child. But what? The Mount Hua Sect has fallen? It's ruined?!",
+    url: "https://anilist.co/manga/129750/Hwasanguihwan",
+    tags: ["action", "martial arts", "reincarnation", "comedy", "sect", "rebuild"],
+    year: 2021
+  },
+  {
+    type: 'manhwa',
+    title: "The Greatest Estate Developer",
+    imageUrl: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx139741-1j1X0v2Q2X1J.jpg",
+    score: 8.5,
+    synopsis: "When civil engineering student Suho Kim falls asleep reading a fantasy novel, he wakes up as a character in the book! Suho is now in the body of Lloyd Frontera, a lazy noble who loves to drink, and whose family is in a mountain of debt. Using his engineering knowledge, Suho designs inventions to avert the terrible future that lies in wait for him.",
+    url: "https://anilist.co/manga/139741/Yeokdaegeup-Yeongji-Seolgyesa",
+    tags: ["comedy", "fantasy", "isekai", "kingdom", "economy", "rebuild", "engineering"],
+    year: 2021
+  }
+];

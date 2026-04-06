@@ -50,6 +50,10 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
             startDate {
               year
             }
+            trailer {
+              id
+              site
+            }
             tags {
               name
             }
@@ -195,7 +199,8 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
         synopsis: cleanSynopsis,
         url: manhwa.siteUrl,
         tags: sortedTags,
-        year: manhwa.startDate?.year
+        year: manhwa.startDate?.year,
+        trailerYoutubeId: manhwa.trailer?.site === 'youtube' ? manhwa.trailer.id : undefined
       };
     });
   } catch (error) {

@@ -3,7 +3,7 @@ import { AnimatePresence } from 'motion/react';
 import { fetchTopAnimeList } from './lib/mal';
 import { fetchTopManhwa } from './lib/anilist';
 import { calculateWorldBuildingScore } from './lib/scoring';
-import { ELITE_ANIME } from './lib/elite';
+import { ELITE_ANIME, ELITE_MANHWA } from './lib/elite';
 import { WESEKAI_CONSTANTS } from './wesekai.constants';
 import { Recommendation } from './types';
 import { TelemetryModal } from './components/TelemetryModal';
@@ -94,8 +94,8 @@ export default function App() {
     setError(null);
     
     try {
-      // 1. Get Elite Anime that match the filter (only if anime is included)
-      const filteredElite = (mediaType === 'all' || mediaType === 'anime') ? ELITE_ANIME.filter(anime => {
+      // 1. Get Elite Anime & Manhwa that match the filter
+      const filteredEliteAnime = (mediaType === 'all' || mediaType === 'anime') ? ELITE_ANIME.filter(anime => {
         const hasBannedGenre = anime.tags.some(tag => 
           WESEKAI_CONSTANTS.BANNED_GENRES.some(banned => tag.toLowerCase() === banned.toLowerCase())
         );
@@ -105,20 +105,22 @@ export default function App() {
         return anime.tags.some(tag => tag.toLowerCase() === activeFilter.toLowerCase());
       }) : [];
 
-      const eliteRecs = filteredElite.map(animeData => {
-        const scoring = calculateWorldBuildingScore(animeData.tags);
+      const filteredEliteManhwa = (mediaType === 'all' || mediaType === 'manhwa') ? ELITE_MANHWA.filter(manhwa => {
+        const hasBannedGenre = manhwa.tags.some(tag => 
+          WESEKAI_CONSTANTS.BANNED_GENRES.some(banned => tag.toLowerCase() === banned.toLowerCase())
+        );
+        if (hasBannedGenre) return false;
+
+        if (activeFilter === 'All') return true;
+        return manhwa.tags.some(tag => tag.toLowerCase() === activeFilter.toLowerCase());
+      }) : [];
+
+      const eliteRecs = [...filteredEliteAnime, ...filteredEliteManhwa].map(contentData => {
+        const scoring = calculateWorldBuildingScore(contentData.tags);
         return {
-          title: animeData.title,
-          tags: animeData.tags,
-          contentData: {
-            type: 'anime' as const,
-            title: animeData.title,
-            imageUrl: animeData.imageUrl,
-            score: animeData.score,
-            synopsis: animeData.synopsis,
-            url: animeData.url,
-            tags: animeData.tags
-          },
+          title: contentData.title,
+          tags: contentData.tags,
+          contentData: contentData,
           wbScore: scoring.score,
           wbReasons: scoring.reasons,
           isElite: true

@@ -213,7 +213,8 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<Unified
           synopsis: anime.synopsis || "No synopsis available.",
           url: anime.url,
           tags: sortedTags,
-          year: anime.year || (anime.aired?.from ? new Date(anime.aired.from).getFullYear() : undefined)
+          year: anime.year || (anime.aired?.from ? new Date(anime.aired.from).getFullYear() : undefined),
+          trailerYoutubeId: anime.trailer?.youtube_id
         };
       });
     }
