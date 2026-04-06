@@ -5,7 +5,7 @@ import { fetchTopManhwa } from './lib/anilist';
 import { calculateWorldBuildingScore } from './lib/scoring';
 import { ELITE_ANIME, ELITE_MANHWA } from './lib/elite';
 import { WESEKAI_CONSTANTS } from './wesekai.constants';
-import { Recommendation } from './types';
+import { Recommendation, UnifiedContent } from './types';
 import { TelemetryModal } from './components/TelemetryModal';
 import { AnimeListModal } from './components/AnimeListModal';
 import { TopNavigation } from './components/TopNavigation';
@@ -27,8 +27,8 @@ const migrateData = (data: any[]): Recommendation[] => {
           contentData: {
             ...item.malData,
             type: 'anime',
-            tags: item.malData.tags || item.tags || []
-          }
+            tags: item.malData.tags || item.tags || [],
+          },
         };
       } else {
         return {
@@ -40,8 +40,8 @@ const migrateData = (data: any[]): Recommendation[] => {
             imageUrl: '',
             score: 0,
             synopsis: '',
-            tags: item.tags || []
-          }
+            tags: item.tags || [],
+          },
         };
       }
     }
@@ -53,7 +53,7 @@ export default function App() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // v2 Features
   const [activeFilter, setActiveFilter] = useState('All');
   const [mediaType, setMediaType] = useState<'all' | 'anime' | 'manhwa'>('all');
@@ -70,7 +70,10 @@ export default function App() {
   // Omakase Engine State
   const [candidatePool, setCandidatePool] = useState<Recommendation[]>([]);
   const [currentRec, setCurrentRec] = useState<Recommendation | null>(null);
-  const [sessionMemory, setSessionMemory] = useState<{ shown: Record<string, number>, skipped: Set<string> }>({ shown: {}, skipped: new Set() });
+  const [sessionMemory, setSessionMemory] = useState<{
+    shown: Record<string, number>;
+    skipped: Set<string>;
+  }>({ shown: {}, skipped: new Set() });
   const [tagPreferences, setTagPreferences] = useState<Record<string, number>>({});
   const [isThinking, setIsThinking] = useState(false);
 
@@ -92,28 +95,38 @@ export default function App() {
   const fetchRecommendations = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       // 1. Get Elite Anime & Manhwa that match the filter
-      const filteredEliteAnime = (mediaType === 'all' || mediaType === 'anime') ? ELITE_ANIME.filter(anime => {
-        const hasBannedGenre = anime.tags.some(tag => 
-          WESEKAI_CONSTANTS.BANNED_GENRES.some(banned => tag.toLowerCase() === banned.toLowerCase())
-        );
-        if (hasBannedGenre) return false;
+      const filteredEliteAnime =
+        mediaType === 'all' || mediaType === 'anime'
+          ? ELITE_ANIME.filter(anime => {
+              const hasBannedGenre = anime.tags.some(tag =>
+                WESEKAI_CONSTANTS.BANNED_GENRES.some(
+                  banned => tag.toLowerCase() === banned.toLowerCase()
+                )
+              );
+              if (hasBannedGenre) return false;
 
-        if (activeFilter === 'All') return true;
-        return anime.tags.some(tag => tag.toLowerCase() === activeFilter.toLowerCase());
-      }) : [];
+              if (activeFilter === 'All') return true;
+              return anime.tags.some(tag => tag.toLowerCase() === activeFilter.toLowerCase());
+            })
+          : [];
 
-      const filteredEliteManhwa = (mediaType === 'all' || mediaType === 'manhwa') ? ELITE_MANHWA.filter(manhwa => {
-        const hasBannedGenre = manhwa.tags.some(tag => 
-          WESEKAI_CONSTANTS.BANNED_GENRES.some(banned => tag.toLowerCase() === banned.toLowerCase())
-        );
-        if (hasBannedGenre) return false;
+      const filteredEliteManhwa =
+        mediaType === 'all' || mediaType === 'manhwa'
+          ? ELITE_MANHWA.filter(manhwa => {
+              const hasBannedGenre = manhwa.tags.some(tag =>
+                WESEKAI_CONSTANTS.BANNED_GENRES.some(
+                  banned => tag.toLowerCase() === banned.toLowerCase()
+                )
+              );
+              if (hasBannedGenre) return false;
 
-        if (activeFilter === 'All') return true;
-        return manhwa.tags.some(tag => tag.toLowerCase() === activeFilter.toLowerCase());
-      }) : [];
+              if (activeFilter === 'All') return true;
+              return manhwa.tags.some(tag => tag.toLowerCase() === activeFilter.toLowerCase());
+            })
+          : [];
 
       const eliteRecs = [...filteredEliteAnime, ...filteredEliteManhwa].map(contentData => {
         const scoring = calculateWorldBuildingScore(contentData.tags);
@@ -123,29 +136,33 @@ export default function App() {
           contentData: contentData,
           wbScore: scoring.score,
           wbReasons: scoring.reasons,
-          isElite: true
+          isElite: true,
         };
       });
 
       // 2. Fetch from APIs (Anime + Manhwa) with graceful fallback
-      const fetchAnime = (mediaType === 'all' || mediaType === 'anime') 
-        ? fetchTopAnimeList(activeFilter).catch(err => {
-            console.warn("Anime API failed, falling back:", err);
-            return [] as UnifiedContent[];
-          })
-        : Promise.resolve([] as UnifiedContent[]);
+      const fetchAnime =
+        mediaType === 'all' || mediaType === 'anime'
+          ? fetchTopAnimeList(activeFilter).catch(err => {
+              console.warn('Anime API failed, falling back:', err);
+              return [] as UnifiedContent[];
+            })
+          : Promise.resolve([] as UnifiedContent[]);
 
-      const fetchManhwa = (mediaType === 'all' || mediaType === 'manhwa')
-        ? fetchTopManhwa(activeFilter).catch(err => {
-            console.warn("Manhwa API failed, falling back:", err);
-            return [] as UnifiedContent[];
-          })
-        : Promise.resolve([] as UnifiedContent[]);
+      const fetchManhwa =
+        mediaType === 'all' || mediaType === 'manhwa'
+          ? fetchTopManhwa(activeFilter).catch(err => {
+              console.warn('Manhwa API failed, falling back:', err);
+              return [] as UnifiedContent[];
+            })
+          : Promise.resolve([] as UnifiedContent[]);
 
       const [animeList, manhwaList] = await Promise.all([fetchAnime, fetchManhwa]);
 
       if (eliteRecs.length === 0 && animeList.length === 0 && manhwaList.length === 0) {
-        throw new Error("Could not fetch data from sources, and no Elite Anime matched your filter. Please try again later.");
+        throw new Error(
+          'Could not fetch data from sources, and no Elite Anime matched your filter. Please try again later.'
+        );
       }
 
       const apiRecs = [...animeList, ...manhwaList].map(contentData => {
@@ -156,30 +173,33 @@ export default function App() {
           contentData: contentData,
           wbScore: scoring.score,
           wbReasons: scoring.reasons,
-          isElite: false
+          isElite: false,
         };
       });
 
       // 3. Combine and Deduplicate
       const combined = [...eliteRecs, ...apiRecs];
-      const uniqueRecs = Array.from(new Map(combined.map(item => [item.contentData.url, item])).values());
+      const uniqueRecs = Array.from(
+        new Map(combined.map(item => [item.contentData.url, item])).values()
+      );
 
       // 4. Sort: Elite first, then by Year, then by WB Score
       uniqueRecs.sort((a, b) => {
         if (a.isElite && !b.isElite) return -1;
         if (!a.isElite && b.isElite) return 1;
-        
+
         const yearA = a.contentData.year || 0;
         const yearB = b.contentData.year || 0;
         if (yearA !== yearB) return yearB - yearA; // Newer first
-        
+
         return b.wbScore - a.wbScore;
       });
 
+      setRecommendations(uniqueRecs);
       setCandidatePool(uniqueRecs);
       setCurrentRec(null); // Force compute next
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred.");
+      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
     } finally {
       setLoading(false);
     }
@@ -238,9 +258,14 @@ export default function App() {
       const recYear = rec.contentData.year || 2015; // Default to somewhat old if unknown
       const age = Math.max(0, currentYear - recYear);
       // Up to +2.5 for brand new, drops to 0 for 10+ years old
-      const recencyBonus = Math.max(0, 2.5 - (age * 0.25));
+      const recencyBonus = Math.max(0, 2.5 - age * 0.25);
 
-      let finalScore = (rec.wbScore * 0.40) + (rec.contentData.score * 0.20) + (tagMatchScore * 0.20) + recencyBonus + (rec.isElite ? 2.0 : 0);
+      let finalScore =
+        rec.wbScore * 0.4 +
+        rec.contentData.score * 0.2 +
+        tagMatchScore * 0.2 +
+        recencyBonus +
+        (rec.isElite ? 2.0 : 0);
 
       finalScore *= driftMultiplier; // Apply Drift Engine Modifiers
       // -----------------------
@@ -254,12 +279,12 @@ export default function App() {
 
       if (finalScore > bestScore) {
         bestScore = finalScore;
-        
+
         // Calculate Confidence Score (0 to 1)
         // Max theoretical base score is ~12.5
         const normalizedScore = Math.min(1, finalScore / 12.5);
         const confidenceScore = Math.max(0, Math.min(1, normalizedScore * driftMultiplier));
-        
+
         bestRec = { ...rec, confidenceScore, driftMultiplier };
       }
     });
@@ -268,7 +293,10 @@ export default function App() {
       setCurrentRec(bestRec);
       setSessionMemory(prev => ({
         ...prev,
-        shown: { ...prev.shown, [bestRec!.contentData.url]: (prev.shown[bestRec!.contentData.url] || 0) + 1 }
+        shown: {
+          ...prev.shown,
+          [bestRec!.contentData.url]: (prev.shown[bestRec!.contentData.url] || 0) + 1,
+        },
       }));
     } else {
       // Pool exhausted, fetch more
@@ -296,66 +324,83 @@ export default function App() {
   }, [candidatePool, currentRec, loading, isThinking, computeNext]);
 
   // Action Handlers
-  const handleWatch = useCallback((rec: Recommendation) => {
-    setWatchlist(prev => [...prev, rec]);
-    setTagPreferences(prev => {
-      const next = { ...prev };
-      // Damped Learning: effect = baseWeight * (1 / (1 + currentAbsoluteWeight))
-      rec.tags.forEach(t => {
-        const current = next[t] || 0;
-        next[t] = current + (1.0 / (1 + Math.abs(current)));
+  const handleWatch = useCallback(
+    (rec: Recommendation) => {
+      setWatchlist(prev => [...prev, rec]);
+      setTagPreferences(prev => {
+        const next = { ...prev };
+        // Damped Learning: effect = baseWeight * (1 / (1 + currentAbsoluteWeight))
+        rec.tags.forEach(t => {
+          const current = next[t] || 0;
+          next[t] = current + 1.0 / (1 + Math.abs(current));
+        });
+        return next;
       });
-      return next;
-    });
-    triggerNext();
-  }, [triggerNext]);
+      triggerNext();
+    },
+    [triggerNext]
+  );
 
-  const handleSkip = useCallback((rec: Recommendation) => {
-    setSessionMemory(prev => {
-      const newSkipped = new Set(prev.skipped);
-      newSkipped.add(rec.contentData.url);
-      return { ...prev, skipped: newSkipped };
-    });
-    setTagPreferences(prev => {
-      const next = { ...prev };
-      rec.tags.forEach(t => {
-        const current = next[t] || 0;
-        next[t] = current - (0.5 / (1 + Math.abs(current)));
+  const handleSkip = useCallback(
+    (rec: Recommendation) => {
+      setSessionMemory(prev => {
+        const newSkipped = new Set(prev.skipped);
+        newSkipped.add(rec.contentData.url);
+        return { ...prev, skipped: newSkipped };
       });
-      return next;
-    });
-    triggerNext();
-  }, [triggerNext]);
+      setTagPreferences(prev => {
+        const next = { ...prev };
+        rec.tags.forEach(t => {
+          const current = next[t] || 0;
+          next[t] = current - 0.5 / (1 + Math.abs(current));
+        });
+        return next;
+      });
+      triggerNext();
+    },
+    [triggerNext]
+  );
 
-  const handleDrop = useCallback((rec: Recommendation) => {
-    setDroppedList(prev => [...prev, rec]);
-    setTagPreferences(prev => {
-      const next = { ...prev };
-      rec.tags.forEach(t => {
-        const current = next[t] || 0;
-        next[t] = current - (2.0 / (1 + Math.abs(current))); // Stronger but still damped
+  const handleDrop = useCallback(
+    (rec: Recommendation) => {
+      setDroppedList(prev => [...prev, rec]);
+      setTagPreferences(prev => {
+        const next = { ...prev };
+        rec.tags.forEach(t => {
+          const current = next[t] || 0;
+          next[t] = current - 2.0 / (1 + Math.abs(current)); // Stronger but still damped
+        });
+        return next;
       });
-      return next;
-    });
-    triggerNext();
-  }, [triggerNext]);
+      triggerNext();
+    },
+    [triggerNext]
+  );
 
   return (
     <div className="min-h-screen text-zinc-50 font-sans selection:bg-indigo-500/30 relative overflow-hidden">
       {/* Ambient Background Glow */}
       <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none" />
-      
-      <TopNavigation 
-        setModalView={setModalView} 
-        droppedCount={droppedList.length} 
-        watchlistCount={watchlist.length} 
+
+      <TopNavigation
+        setModalView={setModalView}
+        droppedCount={droppedList.length}
+        watchlistCount={watchlist.length}
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 md:py-24 lg:py-32 flex flex-col items-center relative z-10">
-        <Header mediaType={mediaType} setMediaType={setMediaType} />
-        <FilterBar filters={FILTERS} activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+        <Header
+          mediaType={mediaType}
+          setMediaType={setMediaType}
+          recommendationCount={recommendations.length}
+        />
+        <FilterBar
+          filters={FILTERS}
+          activeFilter={activeFilter}
+          setActiveFilter={setActiveFilter}
+        />
         <ErrorState error={error} />
-        <RecommendationArea 
+        <RecommendationArea
           loading={loading}
           currentRec={currentRec}
           candidatePoolLength={candidatePool.length}
@@ -369,22 +414,26 @@ export default function App() {
       {/* Modals */}
       <AnimatePresence>
         {modalView === 'telemetry' && (
-          <TelemetryModal 
-            tagPreferences={tagPreferences} 
-            sessionMemory={sessionMemory} 
-            onClose={() => setModalView('none')} 
+          <TelemetryModal
+            tagPreferences={tagPreferences}
+            sessionMemory={sessionMemory}
+            onClose={() => setModalView('none')}
           />
         )}
         {(modalView === 'arsenal' || modalView === 'dropped') && (
-          <AnimeListModal 
+          <AnimeListModal
             type={modalView}
-            watchlist={modalView === 'arsenal' ? watchlist : droppedList} 
-            onClose={() => setModalView('none')} 
-            onRemove={(rec) => {
+            watchlist={modalView === 'arsenal' ? watchlist : droppedList}
+            onClose={() => setModalView('none')}
+            onRemove={rec => {
               if (modalView === 'arsenal') {
-                setWatchlist(prev => prev.filter(item => item.contentData.url !== rec.contentData.url));
+                setWatchlist(prev =>
+                  prev.filter(item => item.contentData.url !== rec.contentData.url)
+                );
               } else {
-                setDroppedList(prev => prev.filter(item => item.contentData.url !== rec.contentData.url));
+                setDroppedList(prev =>
+                  prev.filter(item => item.contentData.url !== rec.contentData.url)
+                );
               }
             }}
           />

@@ -2,7 +2,15 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Network, X, AlertTriangle, RefreshCw } from 'lucide-react';
 
-export function TelemetryModal({ tagPreferences, sessionMemory, onClose }: { tagPreferences: Record<string, number>, sessionMemory: { shown: Record<string, number>, skipped: Set<string> }, onClose: () => void }) {
+export function TelemetryModal({
+  tagPreferences,
+  sessionMemory,
+  onClose,
+}: {
+  tagPreferences: Record<string, number>;
+  sessionMemory: { shown: Record<string, number>; skipped: Set<string> };
+  onClose: () => void;
+}) {
   const [showConfirmReset, setShowConfirmReset] = useState(false);
 
   const sortedTags = Object.entries(tagPreferences).sort((a, b) => b[1] - a[1]);
@@ -10,7 +18,7 @@ export function TelemetryModal({ tagPreferences, sessionMemory, onClose }: { tag
   const frozenBranches = sortedTags.filter(t => t[1] < 0).reverse();
 
   const maxWeight = coreOrbit.length > 0 ? coreOrbit[0][1] : 0;
-  const explorationPressure = Math.max(0.1, 1 - (maxWeight / 3)); // Decays as max weight approaches 3
+  const explorationPressure = Math.max(0.1, 1 - maxWeight / 3); // Decays as max weight approaches 3
 
   const handleReset = () => {
     localStorage.removeItem('wesekai_arsenal');
@@ -35,37 +43,63 @@ export function TelemetryModal({ tagPreferences, sessionMemory, onClose }: { tag
         className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl relative"
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-indigo-500 to-purple-500" />
-        
+
         <div className="p-8 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-emerald-500/20 rounded-xl">
               <Network className="w-7 h-7 text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-2xl font-display font-bold text-white tracking-tight">System Telemetry</h2>
-              <p className="text-sm text-zinc-400 uppercase tracking-widest mt-1">Live Taste Vector Analysis</p>
+              <h2 className="text-2xl font-display font-bold text-white tracking-tight">
+                System Telemetry
+              </h2>
+              <p className="text-sm text-zinc-400 uppercase tracking-widest mt-1">
+                Live Taste Vector Analysis
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors">
+          <button
+            onClick={onClose}
+            className="p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-10">
-          
           {/* Top Level Stats */}
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex flex-col items-center justify-center text-center">
-              <span className="text-4xl font-display font-bold text-emerald-400 mb-2">{(explorationPressure * 100).toFixed(0)}%</span>
-              <span className="text-xs text-zinc-500 uppercase tracking-widest font-medium">Exploration Pressure</span>
+              <span className="text-3xl font-display font-bold text-emerald-400 mb-1">
+                {(explorationPressure * 100).toFixed(0)}%
+              </span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">
+                Exploration
+              </span>
             </div>
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex flex-col items-center justify-center text-center">
-              <span className="text-4xl font-display font-bold text-indigo-400 mb-2">{coreOrbit.length}</span>
-              <span className="text-xs text-zinc-500 uppercase tracking-widest font-medium">Active Vectors</span>
+              <span className="text-3xl font-display font-bold text-indigo-400 mb-1">
+                {coreOrbit.length}
+              </span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">
+                Vectors
+              </span>
             </div>
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex flex-col items-center justify-center text-center">
-              <span className="text-4xl font-display font-bold text-red-400 mb-2">{frozenBranches.length}</span>
-              <span className="text-xs text-zinc-500 uppercase tracking-widest font-medium">Frozen Branches</span>
+              <span className="text-3xl font-display font-bold text-amber-400 mb-1">
+                {Object.keys(sessionMemory.shown).length}
+              </span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">
+                Shown
+              </span>
+            </div>
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex flex-col items-center justify-center text-center">
+              <span className="text-3xl font-display font-bold text-red-400 mb-1">
+                {sessionMemory.skipped.size}
+              </span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">
+                Skipped
+              </span>
             </div>
           </div>
 
@@ -82,13 +116,17 @@ export function TelemetryModal({ tagPreferences, sessionMemory, onClose }: { tag
                   <div key={tag} className="flex items-center gap-4">
                     <div className="w-32 text-xs font-medium text-zinc-400 truncate">{tag}</div>
                     <div className="flex-1 h-2 bg-zinc-900 rounded-full overflow-hidden">
-                      <motion.div 
+                      <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, (weight / 3) * 100)}%` }}
+                        animate={{
+                          width: `${Math.min(100, (weight / 3) * 100)}%`,
+                        }}
                         className="h-full bg-emerald-500 rounded-full"
                       />
                     </div>
-                    <div className="w-12 text-right text-xs font-mono text-emerald-400">+{weight.toFixed(2)}</div>
+                    <div className="w-12 text-right text-xs font-mono text-emerald-400">
+                      +{weight.toFixed(2)}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -108,13 +146,17 @@ export function TelemetryModal({ tagPreferences, sessionMemory, onClose }: { tag
                   <div key={tag} className="flex items-center gap-4">
                     <div className="w-32 text-xs font-medium text-zinc-400 truncate">{tag}</div>
                     <div className="flex-1 h-2 bg-zinc-900 rounded-full overflow-hidden flex justify-end">
-                      <motion.div 
+                      <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, (Math.abs(weight) / 3) * 100)}%` }}
+                        animate={{
+                          width: `${Math.min(100, (Math.abs(weight) / 3) * 100)}%`,
+                        }}
                         className="h-full bg-red-500 rounded-full"
                       />
                     </div>
-                    <div className="w-12 text-right text-xs font-mono text-red-400">{weight.toFixed(2)}</div>
+                    <div className="w-12 text-right text-xs font-mono text-red-400">
+                      {weight.toFixed(2)}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -149,16 +191,17 @@ export function TelemetryModal({ tagPreferences, sessionMemory, onClose }: { tag
                     CRITICAL WARNING
                   </div>
                   <p className="text-sm text-red-200/80">
-                    This will permanently delete your Arsenal, Dropped list, and completely wipe the taste vector memory. The system will restart from zero.
+                    This will permanently delete your Arsenal, Dropped list, and completely wipe the
+                    taste vector memory. The system will restart from zero.
                   </p>
                   <div className="flex gap-3 w-full">
-                    <button 
+                    <button
                       onClick={() => setShowConfirmReset(false)}
                       className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors text-sm font-medium"
                     >
                       Cancel
                     </button>
-                    <button 
+                    <button
                       onClick={handleReset}
                       className="flex-1 py-2.5 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors text-sm font-bold shadow-[0_0_15px_rgba(239,68,68,0.4)]"
                     >
@@ -169,7 +212,6 @@ export function TelemetryModal({ tagPreferences, sessionMemory, onClose }: { tag
               )}
             </AnimatePresence>
           </div>
-
         </div>
       </motion.div>
     </motion.div>

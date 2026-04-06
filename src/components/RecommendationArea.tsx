@@ -23,7 +23,7 @@ export function RecommendationArea({
   isThinking,
   handleWatch,
   handleSkip,
-  handleDrop
+  handleDrop,
 }: RecommendationAreaProps) {
   return (
     <div className="w-full relative min-h-[500px] flex justify-center items-start mt-12">
@@ -34,9 +34,9 @@ export function RecommendationArea({
       ) : currentRec ? (
         <div className="w-full max-w-4xl">
           <AnimatePresence mode="wait">
-            <ResultCard 
-              key={currentRec.contentData.url} 
-              recommendation={currentRec} 
+            <ResultCard
+              key={currentRec.contentData.url}
+              recommendation={currentRec}
               onWatch={() => handleWatch(currentRec)}
               onSkip={() => handleSkip(currentRec)}
               onDrop={() => handleDrop(currentRec)}
@@ -47,11 +47,13 @@ export function RecommendationArea({
         <div className="text-zinc-400 text-center flex flex-col items-center justify-center min-h-[400px]">
           <motion.div
             animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
           >
             <Cpu className="w-12 h-12 text-indigo-500 mb-6" />
           </motion.div>
-          <p className="font-display tracking-widest uppercase text-base text-indigo-300/70">Synthesizing Taste Profile...</p>
+          <p className="font-display tracking-widest uppercase text-base text-indigo-300/70">
+            Synthesizing Taste Profile...
+          </p>
         </div>
       ) : (
         <EmptyState key="empty" />

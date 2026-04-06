@@ -4,25 +4,37 @@ import { Library, Ban, X, Globe, Star, PlayCircle, Trash2, Youtube } from 'lucid
 import { Recommendation } from '../types';
 import { getYouTubeSearchUrl } from '../lib/youtube';
 
-export function AnimeListModal({ type, watchlist, onClose, onRemove }: { type: 'arsenal' | 'dropped', watchlist: Recommendation[], onClose: () => void, onRemove: (rec: Recommendation) => void }) {
+export function AnimeListModal({
+  type,
+  watchlist,
+  onClose,
+  onRemove,
+}: {
+  type: 'arsenal' | 'dropped';
+  watchlist: Recommendation[];
+  onClose: () => void;
+  onRemove: (rec: Recommendation) => void;
+}) {
   const isArsenal = type === 'arsenal';
   const Icon = isArsenal ? Library : Ban;
-  const title = isArsenal ? "Your Arsenal" : "Dropped Anime";
-  const emptyMsg = isArsenal ? "Your Arsenal is empty." : "No dropped anime yet.";
-  const emptySub = isArsenal ? "Save recommendations to build your watchlist." : "Anime you drop will appear here.";
-  const themeColor = isArsenal ? "text-indigo-400" : "text-red-400";
-  const themeBg = isArsenal ? "bg-indigo-500/20" : "bg-red-500/20";
-  const hoverBorder = isArsenal ? "hover:border-indigo-500/30" : "hover:border-red-500/30";
-  const linkHover = isArsenal ? "hover:text-indigo-300" : "hover:text-red-300";
+  const title = isArsenal ? 'Your Arsenal' : 'Dropped Anime';
+  const emptyMsg = isArsenal ? 'Your Arsenal is empty.' : 'No dropped anime yet.';
+  const emptySub = isArsenal
+    ? 'Save recommendations to build your watchlist.'
+    : 'Anime you drop will appear here.';
+  const themeColor = isArsenal ? 'text-indigo-400' : 'text-red-400';
+  const themeBg = isArsenal ? 'bg-indigo-500/20' : 'bg-red-500/20';
+  const hoverBorder = isArsenal ? 'hover:border-indigo-500/30' : 'hover:border-red-500/30';
+  const linkHover = isArsenal ? 'hover:text-indigo-300' : 'hover:text-red-300';
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-sm"
     >
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.95, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 20 }}
@@ -34,9 +46,11 @@ export function AnimeListModal({ type, watchlist, onClose, onRemove }: { type: '
             <div className={`p-2.5 sm:p-3 ${themeBg} rounded-xl`}>
               <Icon className={`w-6 h-6 sm:w-7 sm:h-7 ${themeColor}`} />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">{title}</h2>
+            <h2 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+              {title}
+            </h2>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 sm:p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors"
           >
@@ -54,11 +68,14 @@ export function AnimeListModal({ type, watchlist, onClose, onRemove }: { type: '
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {watchlist.map((rec) => (
-                <div key={rec.contentData.url} className={`flex gap-4 sm:gap-5 p-4 sm:p-5 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl group ${hoverBorder} transition-colors`}>
-                  <img 
-                    src={rec.contentData.imageUrl} 
-                    alt={rec.title} 
+              {watchlist.map(rec => (
+                <div
+                  key={rec.contentData.url}
+                  className={`flex gap-4 sm:gap-5 p-4 sm:p-5 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl group ${hoverBorder} transition-colors`}
+                >
+                  <img
+                    src={rec.contentData.imageUrl}
+                    alt={rec.title}
                     className="w-20 h-28 sm:w-24 sm:h-32 object-cover rounded-xl shadow-md shrink-0"
                     referrerPolicy="no-referrer"
                     loading="lazy"
@@ -67,12 +84,16 @@ export function AnimeListModal({ type, watchlist, onClose, onRemove }: { type: '
                   <div className="flex-1 flex flex-col">
                     <h3 className="font-bold text-zinc-200 line-clamp-2 mb-1">{rec.title}</h3>
                     <div className="flex items-center gap-2 text-xs text-zinc-500 mb-auto">
-                      <span className="flex items-center gap-1"><Globe className={`w-3 h-3 ${themeColor}`}/> {rec.wbScore.toFixed(1)}</span>
-                      <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500"/> {rec.contentData.score}</span>
+                      <span className="flex items-center gap-1">
+                        <Globe className={`w-3 h-3 ${themeColor}`} /> {rec.wbScore.toFixed(1)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Star className="w-3 h-3 text-yellow-500" /> {rec.contentData.score}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
                       <div className="flex flex-wrap gap-2 sm:gap-3">
-                        <a 
+                        <a
                           href={getYouTubeSearchUrl(rec.contentData.title, rec.contentData.type)}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -80,18 +101,21 @@ export function AnimeListModal({ type, watchlist, onClose, onRemove }: { type: '
                         >
                           <Youtube className="w-3 h-3" /> Recap
                         </a>
-                        <a 
-                          href={rec.contentData.type === 'manhwa' 
-                            ? `https://mangadex.org/titles?q=${encodeURIComponent(rec.contentData.title)}`
-                            : `https://aniwatchtv.to/search?keyword=${encodeURIComponent(rec.contentData.title)}`}
+                        <a
+                          href={
+                            rec.contentData.type === 'manhwa'
+                              ? `https://mangadex.org/titles?q=${encodeURIComponent(rec.contentData.title)}`
+                              : `https://aniwatchtv.to/search?keyword=${encodeURIComponent(rec.contentData.title)}`
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`text-xs font-medium ${themeColor} ${linkHover} flex items-center gap-1`}
                         >
-                          <PlayCircle className="w-3 h-3" /> {rec.contentData.type === 'manhwa' ? 'Read' : 'Watch'}
+                          <PlayCircle className="w-3 h-3" />{' '}
+                          {rec.contentData.type === 'manhwa' ? 'Read' : 'Watch'}
                         </a>
                       </div>
-                      <button 
+                      <button
                         onClick={() => onRemove(rec)}
                         className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors"
                         title={`Remove from ${isArsenal ? 'Arsenal' : 'Dropped'}`}
