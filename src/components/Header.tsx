@@ -1,62 +1,142 @@
 import { motion } from 'motion/react';
+import { Activity, Ban, Library, Shield } from 'lucide-react';
+import { Logo } from './Logo';
 
 interface HeaderProps {
   mediaType: 'all' | 'anime' | 'manhwa';
   setMediaType: (type: 'all' | 'anime' | 'manhwa') => void;
-  recommendationCount?: number;
+  setModalView: (view: 'none' | 'arsenal' | 'dropped' | 'telemetry') => void;
+  droppedCount: number;
+  watchlistCount: number;
 }
 
-export function Header({ mediaType, setMediaType, recommendationCount = 0 }: HeaderProps) {
+const getLevelInfo = (count: number) => {
+  const level = Math.floor(count / 5) + 1;
+  const titles = [
+    'Apprentice',
+    'Scouter',
+    'Strategist',
+    'World Walker',
+    'Isekai Sage',
+    'Sovereign',
+  ];
+  return {
+    level,
+    title: titles[Math.min(level - 1, titles.length - 1)],
+    color: level >= 5 ? 'text-yellow-400' : level >= 3 ? 'text-indigo-400' : 'text-zinc-400',
+  };
+};
+
+export function Header({
+  mediaType,
+  setMediaType,
+  setModalView,
+  droppedCount,
+  watchlistCount,
+}: HeaderProps) {
+  const levelInfo = getLevelInfo(watchlistCount);
+
   return (
-    <>
-      {/* System Status Indicator */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium tracking-widest uppercase mb-10 backdrop-blur-sm shadow-[0_0_15px_rgba(79,70,229,0.15)]"
-      >
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-        </span>
-        Intelligence Layer Online{' '}
-        {recommendationCount > 0 && `| ${recommendationCount} Vectors Loaded`}
-      </motion.div>
-
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1 }}
-        className="text-center mb-12 sm:mb-16"
-      >
-        <h1 className="font-display text-5xl sm:text-6xl md:text-8xl font-extrabold tracking-tighter mb-4 sm:mb-6 bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent drop-shadow-sm">
-          WESEKAI
-        </h1>
-        <p className="text-zinc-400 text-lg sm:text-xl md:text-2xl leading-relaxed max-w-2xl mx-auto font-light px-2 mb-8">
-          Dynamic isekai recommendations powered by the{' '}
-          <span className="text-indigo-300 font-medium">Wesley Intelligence Layer</span>.
-        </p>
-
-        {/* Media Type Toggle */}
-        <div className="flex justify-center">
-          <div className="bg-zinc-900/80 p-1.5 rounded-full border border-zinc-800 flex items-center shadow-lg backdrop-blur-md">
-            {(['all', 'anime', 'manhwa'] as const).map(type => (
-              <button
-                key={type}
-                onClick={() => setMediaType(type)}
-                className={`px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-all ${
-                  mediaType === type
-                    ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
-                }`}
-              >
-                {type}
-              </button>
-            ))}
+    <header className="w-full mb-8 sm:mb-12">
+      {/* Top Bar: Logo and Actions */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
+        {/* Logo Section */}
+        <div className="flex items-center gap-4">
+          <Logo size={42} className="shadow-lg" />
+          <div className="flex flex-col">
+            <span className="font-display font-black text-2xl tracking-tighter text-white leading-none">
+              WESEKAI
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-500/80 mt-1">
+              The Sovereign&apos;s Codex
+            </span>
           </div>
         </div>
+
+        {/* Action Buttons & Status */}
+        <div className="flex flex-wrap justify-center items-center gap-3">
+          {/* Arsenal Level Badge */}
+          <div className="flex items-center gap-3 px-4 py-2 bg-zinc-900/60 border border-zinc-800/50 rounded-2xl backdrop-blur-md">
+            <Shield className={`w-4 h-4 ${levelInfo.color} animate-pulse`} />
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 leading-none">
+                Arsenal Status
+              </span>
+              <span
+                className={`text-[11px] font-black uppercase tracking-widest ${levelInfo.color}`}
+              >
+                LVL {levelInfo.level} - {levelInfo.title}
+              </span>
+            </div>
+          </div>
+
+          <div className="h-8 w-px bg-zinc-800/50 mx-1 hidden sm:block" />
+
+          <button
+            onClick={() => setModalView('telemetry')}
+            className="group flex items-center gap-2 px-4 py-2 bg-zinc-900/40 border border-zinc-800/50 rounded-xl text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all backdrop-blur-sm"
+          >
+            <Activity className="w-4 h-4 text-emerald-500/70 group-hover:text-emerald-400 transition-colors" />
+            <span className="font-bold text-xs uppercase tracking-tight hidden sm:inline">
+              Telemetry
+            </span>
+          </button>
+
+          <button
+            onClick={() => setModalView('dropped')}
+            className="group flex items-center gap-2 px-4 py-2 bg-zinc-900/40 border border-zinc-800/50 rounded-xl text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all backdrop-blur-sm"
+          >
+            <Ban className="w-4 h-4 text-red-500/70 group-hover:text-red-400 transition-colors" />
+            <span className="font-bold text-xs uppercase tracking-tight hidden sm:inline">
+              Dropped
+            </span>
+            <span className="bg-zinc-800 group-hover:bg-red-500/20 px-1.5 py-0.5 rounded text-[10px] font-black min-w-[1.5rem] transition-colors">
+              {droppedCount}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setModalView('arsenal')}
+            className="group flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-300 hover:text-white hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all backdrop-blur-sm"
+          >
+            <Library className="w-4 h-4 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
+            <span className="font-bold text-xs uppercase tracking-tight hidden sm:inline">
+              Arsenal
+            </span>
+            <span className="bg-indigo-500/20 group-hover:bg-indigo-500/30 px-1.5 py-0.5 rounded text-[10px] font-black min-w-[1.5rem] transition-colors">
+              {watchlistCount}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Media Type Toggle - Centered below logo and actions */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex justify-center"
+      >
+        <div className="bg-zinc-900/60 p-1 rounded-2xl border border-zinc-800/50 flex items-center shadow-2xl backdrop-blur-xl">
+          {(['all', 'anime', 'manhwa'] as const).map(type => (
+            <button
+              key={type}
+              onClick={() => setMediaType(type)}
+              className={`relative px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 ${
+                mediaType === type ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              {mediaType === type && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-indigo-500 rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              <span className="relative z-10">{type}</span>
+            </button>
+          ))}
+        </div>
       </motion.div>
-    </>
+    </header>
   );
 }

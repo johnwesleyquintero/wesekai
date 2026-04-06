@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Library, Ban, X, Globe, Star, PlayCircle, Trash2, Youtube } from 'lucide-react';
+import { Library, Ban, X, Globe, Star, PlayCircle, Trash2, Play } from 'lucide-react';
 import { Recommendation } from '../types';
 import { getYouTubeSearchUrl } from '../lib/youtube';
 
@@ -98,7 +98,7 @@ export function AnimeListModal({
                           rel="noopener noreferrer"
                           className={`text-xs font-medium ${themeColor} ${linkHover} flex items-center gap-1`}
                         >
-                          <Youtube className="w-3 h-3" /> Recap
+                          <Play className="w-4 h-4" /> Recap
                         </a>
                         <a
                           href={

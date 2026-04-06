@@ -12,7 +12,7 @@ import {
   PlayCircle,
   Check,
   Copy,
-  Youtube,
+  Play,
   Loader2,
   Cpu,
   Sparkles,
@@ -383,7 +383,7 @@ export const ResultCard: FC<{
                   {isFetchingTrailer ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Youtube className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
+                    <Play className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
                   )}
                   Trailer
                 </button>
@@ -397,7 +397,7 @@ export const ResultCard: FC<{
                 rel="noopener noreferrer"
                 className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-red-400 transition-colors"
               >
-                <Youtube className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
+                <Play className="w-4 h-4 group-hover/link:scale-110 transition-transform" />
                 Recap
               </a>
               <a
