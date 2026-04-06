@@ -186,11 +186,11 @@ export function useRecommendationEngine() {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [activeFilter, mediaType]);
+  }, [activeFilter, mediaType, dispatch]);
 
   useEffect(() => {
     fetchRecommendations();
-  }, [fetchRecommendations]);
+  }, [fetchRecommendations, activeFilter, mediaType]);
 
   const computeNext = useCallback(() => {
     if (candidatePool.length === 0) return;
