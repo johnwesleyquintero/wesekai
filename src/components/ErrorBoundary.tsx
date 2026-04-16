@@ -25,8 +25,16 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   handleReset = () => {
+    const currentState = this.state;
     this.setState({ hasError: false, error: null });
-    window.location.reload();
+
+    // If after 500ms it's still broken, then perform a hard reload.
+    // We use a closure variable to capture the state snapshot for a reliable check.
+    setTimeout(() => {
+      if (currentState.hasError && this.state.hasError) {
+        window.location.reload();
+      }
+    }, 500);
   };
 
   render() {

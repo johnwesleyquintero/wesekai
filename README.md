@@ -81,6 +81,7 @@ npm run check
 ```
 
 Includes:
+
 - **Formatting:** Prettier
 - **Linting:** ESLint with TypeScript strict rules
 - **Type-Checking:** TypeScript Compiler (tsc)

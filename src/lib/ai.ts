@@ -35,15 +35,22 @@ export async function getWesleyAnalysis(
       Don't use markdown formatting, just plain text.
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Use 2.0 as 1.5 is deprecated in 2026
-      contents: prompt,
-    });
-
-    return response.text || 'Analysis complete, but the response was empty.';
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: prompt,
+      });
+      return response.text || 'The Intelligence Layer processed the data but returned silence.';
+    } catch {
+      // Secondary fallback to stable 1.5 if 2.0 has an outage
+      const response = await ai.models.generateContent({
+        model: 'gemini-1.5-flash-latest',
+        contents: prompt,
+      });
+      return response.text || 'Intelligence Layer fallback complete.';
+    }
   } catch (error) {
     console.error('Wesley Analysis Error:', error);
-    // Fallback if 2.0 fails, try 1.5-flash-latest or return error
-    return 'Analysis failed. The Intelligence Layer encountered a quantum fluctuation.';
+    return 'The Intelligence Layer encountered a quantum fluctuation. Recalibrating...';
   }
 }

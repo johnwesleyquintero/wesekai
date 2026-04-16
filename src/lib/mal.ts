@@ -55,6 +55,10 @@ export async function fetchTopAnimeList(filter: string = 'All'): Promise<Unified
         if (filter === 'Military') return q.genres?.includes('38');
         if (filter === 'Strategy') return q.genres?.includes('11');
         if (filter === 'Reincarnation') return q.genres?.includes('73');
+        if (filter === 'Action') return q.genres?.includes('1') || q.q?.includes('war');
+        if (filter === 'Comedy') return q.genres?.includes('4');
+        if (filter === 'Kingdom')
+          return q.q?.includes('kingdom') || q.q?.includes('politics') || q.q?.includes('rebuild');
         return true;
       });
     }

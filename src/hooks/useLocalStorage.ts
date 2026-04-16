@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Recommendation } from '../types';
 
-type LegacyRecommendation = Partial<Recommendation> & { 
+type LegacyRecommendation = Partial<Recommendation> & {
   malData?: {
     title?: string;
     tags?: string[];
     [key: string]: unknown;
   };
-  url?: string; 
+  url?: string;
   title?: string;
   tags?: string[];
 };

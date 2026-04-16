@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
+import { ToastContainer } from './components/Toast';
 import { TelemetryModal } from './components/TelemetryModal';
 import { AnimeListModal } from './components/AnimeListModal';
 import { Header } from './components/Header';
@@ -11,7 +12,21 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { MobileNav } from './components/MobileNav';
 import { refreshEliteImages } from './lib/elite';
 
-const FILTERS = ['All', 'Action', 'Adventure', 'Fantasy', 'Sci-Fi', 'Romance', 'Drama', 'Comedy'];
+const FILTERS = [
+  'All',
+  'Isekai',
+  'Fantasy',
+  'Action',
+  'Adventure',
+  'Military',
+  'Strategy',
+  'Reincarnation',
+  'Kingdom',
+  'Comedy',
+  'Romance',
+  'Sci-Fi',
+  'Drama',
+];
 
 export default function App() {
   const {
@@ -33,6 +48,7 @@ export default function App() {
     handleSkip,
     handleDrop,
     candidatePoolLength,
+    toasts,
   } = useRecommendationEngine();
 
   const [modalView, setModalView] = useState<'none' | 'arsenal' | 'dropped' | 'telemetry'>('none');
@@ -109,6 +125,7 @@ export default function App() {
             />
           )}
         </AnimatePresence>
+        <ToastContainer toasts={toasts} />
       </div>
     </ErrorBoundary>
   );

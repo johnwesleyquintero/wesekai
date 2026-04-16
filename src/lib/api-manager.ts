@@ -3,6 +3,19 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
+export type ApiErrorCategory = 'RATE_LIMIT' | 'NETWORK' | 'AUTH' | 'SERVER' | 'UNKNOWN';
+
+export class ApiError extends Error {
+  constructor(
+    public category: ApiErrorCategory,
+    message: string,
+    public status?: number
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 const DEFAULT_CACHE_TTL = 1000 * 60 * 30; // 30 minutes
 
 class ApiManager {
@@ -33,20 +46,32 @@ class ApiManager {
 
         if (response.status === 429 || (response.status >= 500 && attempt < maxRetries - 1)) {
           const waitTime = baseDelay * Math.pow(2, attempt);
-          console.warn(`API Error ${response.status}. Retrying in ${waitTime}ms...`);
+          const logPrefix = response.status === 429 ? '[SYSTEM: COOLDOWN]' : '[SYSTEM: RECOVERY]';
+          console.warn(
+            `${logPrefix} Status ${response.status}. Initiating temporal delay: ${waitTime}ms...`
+          );
           await new Promise(resolve => setTimeout(resolve, waitTime));
           continue;
         }
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new ApiError(
+            response.status === 429 ? 'RATE_LIMIT' : response.status >= 500 ? 'SERVER' : 'UNKNOWN',
+            `HTTP error! status: ${response.status}`,
+            response.status
+          );
         }
 
         return await response.json();
       } catch (err) {
-        if (attempt === maxRetries - 1) throw err;
+        if (attempt === maxRetries - 1) {
+          throw err instanceof ApiError ? err : new ApiError('NETWORK', (err as Error).message);
+        }
         const waitTime = baseDelay * Math.pow(2, attempt);
-        console.warn(`Network error. Retrying in ${waitTime}ms...`, err);
+        console.warn(
+          `[SYSTEM: INTERFERENCE] Network anomaly detected. Retrying in ${waitTime}ms...`,
+          err
+        );
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }

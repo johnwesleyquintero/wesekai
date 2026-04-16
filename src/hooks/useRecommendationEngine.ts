@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useCallback } from 'react';
+import { useReducer, useEffect, useCallback, useState, useRef } from 'react';
 import { fetchTopAnimeList } from '../lib/mal';
 import { fetchTopManhwa } from '../lib/anilist';
 import { calculateWorldBuildingScore } from '../lib/scoring';
@@ -12,6 +12,12 @@ const STORAGE_KEYS = {
   WATCHLIST: 'wesekai-arsenal',
   DROPPED: 'wesekai-dropped',
 };
+
+export interface Toast {
+  id: string;
+  message: string;
+  type: 'success' | 'info' | 'error';
+}
 
 export function useRecommendationEngine() {
   const [state, dispatch] = useReducer(recommendationReducer, {
@@ -34,6 +40,15 @@ export function useRecommendationEngine() {
     })(),
   });
 
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const thinkingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
+    };
+  }, []);
+
   const {
     recommendations,
     loading,
@@ -48,6 +63,14 @@ export function useRecommendationEngine() {
     tagPreferences,
     isThinking,
   } = state;
+
+  const addToast = useCallback((message: string, type: Toast['type'] = 'success') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
+  }, []);
 
   // Persistence
   useEffect(() => {
@@ -164,6 +187,7 @@ export function useRecommendationEngine() {
     const watchlistUrls = new Set(watchlist.map(w => w.contentData.url));
     const droppedUrls = new Set(droppedList.map(d => d.contentData.url));
     const currentYear = new Date().getFullYear();
+    const tagPrefs = tagPreferences; // Capture for stable reference
 
     (candidatePool as Recommendation[]).forEach((rec: Recommendation) => {
       if (!rec?.contentData?.url) return;
@@ -175,7 +199,7 @@ export function useRecommendationEngine() {
       let positiveHits = 0;
 
       rec.tags.forEach(tag => {
-        const weight = tagPreferences[tag] || 0;
+        const weight = tagPrefs[tag] || 0;
         rawTagScore += weight;
         if (weight <= -1.0) frozenBranchHits++;
         if (weight >= 1.0) positiveHits++;
@@ -228,9 +252,16 @@ export function useRecommendationEngine() {
   }, [candidatePool, watchlist, droppedList, sessionMemory, tagPreferences, fetchRecommendations]);
 
   const triggerNext = useCallback(() => {
+    if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
+
     dispatch({ type: 'SET_CURRENT_REC', payload: null });
     dispatch({ type: 'SET_THINKING', payload: true });
-    setTimeout(() => dispatch({ type: 'SET_THINKING', payload: false }), 400);
+
+    // Debounced "Thinking" period to ensure animation fluidity
+    thinkingTimeoutRef.current = setTimeout(
+      () => dispatch({ type: 'SET_THINKING', payload: false }),
+      600
+    );
   }, []);
 
   useEffect(() => {
@@ -248,9 +279,10 @@ export function useRecommendationEngine() {
         nextPrefs[t] = current + 1.0 / (1 + Math.abs(current));
       });
       dispatch({ type: 'SET_TAG_PREFERENCES', payload: nextPrefs });
+      addToast(`Added ${rec.title} to Arsenal`, 'success');
       triggerNext();
     },
-    [watchlist, tagPreferences, triggerNext]
+    [watchlist, tagPreferences, triggerNext, addToast]
   );
 
   const handleSkip = useCallback(
@@ -264,9 +296,10 @@ export function useRecommendationEngine() {
         nextPrefs[t] = current - 0.5 / (1 + Math.abs(current));
       });
       dispatch({ type: 'SET_TAG_PREFERENCES', payload: nextPrefs });
+      addToast(`Skipped ${rec.title}`, 'info');
       triggerNext();
     },
-    [sessionMemory.skipped, tagPreferences, triggerNext]
+    [sessionMemory.skipped, tagPreferences, triggerNext, addToast]
   );
 
   const handleDrop = useCallback(
@@ -278,9 +311,10 @@ export function useRecommendationEngine() {
         nextPrefs[t] = current - 2.0 / (1 + Math.abs(current));
       });
       dispatch({ type: 'SET_TAG_PREFERENCES', payload: nextPrefs });
+      addToast(`${rec.title} dropped. Vector purged.`, 'error');
       triggerNext();
     },
-    [droppedList, tagPreferences, triggerNext]
+    [droppedList, tagPreferences, triggerNext, addToast]
   );
 
   const setMediaType = useCallback((payload: 'all' | 'anime' | 'manhwa') => {
@@ -318,6 +352,7 @@ export function useRecommendationEngine() {
     handleWatch,
     handleSkip,
     handleDrop,
+    toasts,
     candidatePoolLength: candidatePool.length,
   };
 }
