@@ -51,7 +51,7 @@ export function Logo({ size = 40, showBackground = true, className = '' }: LogoP
 
         <g filter="url(#logo-glow)">
           {/* Portal Ring */}
-          <circle
+          <motion.circle
             cx="50"
             cy="50"
             r="26"
@@ -59,17 +59,22 @@ export function Logo({ size = 40, showBackground = true, className = '' }: LogoP
             strokeWidth="3"
             fill="none"
             opacity="0.8"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+            style={{ originX: '50px', originY: '50px' }}
           />
 
           {/* Inner Pulse Ring */}
-          <circle
+          <motion.circle
             cx="50"
             cy="50"
             r="18"
             stroke="#a78bfa"
             strokeWidth="1.5"
             fill="none"
-            opacity="0.5"
+            animate={{ opacity: [0.3, 0.6, 0.3], scale: [0.98, 1.02, 0.98] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ originX: '50px', originY: '50px' }}
           />
 
           {/* Sword (Core Identity) */}
@@ -78,7 +83,14 @@ export function Logo({ size = 40, showBackground = true, className = '' }: LogoP
           <rect x="44" y="62" width="12" height="3" rx="1.5" fill="#ffffff" />
 
           {/* Focus Core */}
-          <circle cx="50" cy="50" r="3.5" fill="#ffffff" />
+          <motion.circle
+            cx="50"
+            cy="50"
+            r="3.5"
+            fill="#ffffff"
+            animate={{ r: [3.5, 4.5, 3.5], opacity: [0.8, 1, 0.8] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          />
         </g>
       </svg>
     </motion.div>

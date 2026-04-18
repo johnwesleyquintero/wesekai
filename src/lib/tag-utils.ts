@@ -5,7 +5,7 @@
 /**
  * Mapping of core tags to their synonyms for keyword extraction.
  */
-export const KEYWORD_SYNONYMS: Record<string, string[]> = {
+export const KEYWORD_SYNONYMS: Readonly<Record<string, readonly string[]>> = {
   kingdom: ['kingdom', 'realm', 'monarchy', 'domain'],
   economy: ['economy', 'economics', 'finance', 'commerce', 'capitalism', 'market'],
   politics: ['politics', 'political', 'nobility', 'aristocracy', 'faction', 'court'],

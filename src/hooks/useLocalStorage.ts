@@ -55,7 +55,7 @@ export const migrateData = (data: unknown[]): Recommendation[] => {
       title: raw.title || 'Unknown',
       tags: raw.tags || [],
       contentData: {
-        url: raw.url || Math.random().toString(),
+        url: raw.url || `legacy-${Date.now()}-${raw.title || 'unknown'}`,
         title: raw.title || 'Unknown',
         type: 'anime',
         imageUrl: '',
