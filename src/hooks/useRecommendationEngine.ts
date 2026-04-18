@@ -292,6 +292,34 @@ export function useRecommendationEngine() {
     [droppedList, tagPreferences, triggerNext, addToast]
   );
 
+  const handleBulkRemoveFromWatchlist = useCallback(
+    (urls: string[]) => {
+      const updated = watchlist.filter(item => !urls.includes(item.contentData.url));
+      dispatch({ type: 'SET_WATCHLIST', payload: updated });
+      addToast(`Removed ${urls.length} items from Arsenal`, 'info');
+    },
+    [watchlist, addToast]
+  );
+
+  const handleBulkRemoveFromDropped = useCallback(
+    (urls: string[]) => {
+      const updated = droppedList.filter(item => !urls.includes(item.contentData.url));
+      dispatch({ type: 'SET_DROPPED_LIST', payload: updated });
+      addToast(`Restored ${urls.length} items from Dropped`, 'info');
+    },
+    [droppedList, addToast]
+  );
+
+  const handleClearWatchlist = useCallback(() => {
+    dispatch({ type: 'SET_WATCHLIST', payload: [] });
+    addToast('Arsenal cleared.', 'info');
+  }, [addToast]);
+
+  const handleClearDropped = useCallback(() => {
+    dispatch({ type: 'SET_DROPPED_LIST', payload: [] });
+    addToast('Dropped list purged.', 'info');
+  }, [addToast]);
+
   const setMediaType = useCallback((payload: 'all' | 'anime' | 'manhwa') => {
     dispatch({ type: 'SET_MEDIA_TYPE', payload });
   }, []);
@@ -327,6 +355,10 @@ export function useRecommendationEngine() {
     handleWatch,
     handleSkip,
     handleDrop,
+    handleBulkRemoveFromWatchlist,
+    handleBulkRemoveFromDropped,
+    handleClearWatchlist,
+    handleClearDropped,
     toasts,
     candidatePoolLength: candidatePool.length,
   };

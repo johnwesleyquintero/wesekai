@@ -37,9 +37,7 @@ export default function App() {
     mediaType,
     setMediaType,
     watchlist,
-    setWatchlist,
     droppedList,
-    setDroppedList,
     currentRec,
     sessionMemory,
     tagPreferences,
@@ -47,6 +45,10 @@ export default function App() {
     handleWatch,
     handleSkip,
     handleDrop,
+    handleBulkRemoveFromWatchlist,
+    handleBulkRemoveFromDropped,
+    handleClearWatchlist,
+    handleClearDropped,
     candidatePoolLength,
     toasts,
   } = useRecommendationEngine();
@@ -112,14 +114,25 @@ export default function App() {
               watchlist={modalView === 'arsenal' ? watchlist : droppedList}
               onClose={() => setModalView('none')}
               onRemove={rec => {
+                const urls = [rec.contentData.url];
                 if (modalView === 'arsenal') {
-                  setWatchlist(
-                    watchlist.filter(item => item.contentData.url !== rec.contentData.url)
-                  );
+                  handleBulkRemoveFromWatchlist(urls);
                 } else {
-                  setDroppedList(
-                    droppedList.filter(item => item.contentData.url !== rec.contentData.url)
-                  );
+                  handleBulkRemoveFromDropped(urls);
+                }
+              }}
+              onBulkRemove={urls => {
+                if (modalView === 'arsenal') {
+                  handleBulkRemoveFromWatchlist(urls);
+                } else {
+                  handleBulkRemoveFromDropped(urls);
+                }
+              }}
+              onClearAll={() => {
+                if (modalView === 'arsenal') {
+                  handleClearWatchlist();
+                } else {
+                  handleClearDropped();
                 }
               }}
             />
