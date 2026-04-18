@@ -13,9 +13,16 @@ export function TelemetryModal({
 }) {
   const [showConfirmReset, setShowConfirmReset] = useState(false);
 
-  const sortedTags = Object.entries(tagPreferences).sort((a, b) => b[1] - a[1]);
-  const coreOrbit = sortedTags.filter(t => t[1] > 0);
-  const frozenBranches = sortedTags.filter(t => t[1] < 0).reverse();
+  const { coreOrbit, frozenBranches } = Object.entries(tagPreferences)
+    .sort((a, b) => b[1] - a[1])
+    .reduce(
+      (acc, curr) => {
+        if (curr[1] > 0) acc.coreOrbit.push(curr);
+        else if (curr[1] < 0) acc.frozenBranches.unshift(curr); // unshift keeps the strongest negative at the top
+        return acc;
+      },
+      { coreOrbit: [] as [string, number][], frozenBranches: [] as [string, number][] }
+    );
 
   const maxWeight = coreOrbit.length > 0 ? coreOrbit[0][1] : 0;
   const explorationPressure = Math.max(0.1, 1 - maxWeight / 3); // Decays as max weight approaches 3

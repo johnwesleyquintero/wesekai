@@ -27,7 +27,7 @@ export const migrateData = (data: unknown[]): Recommendation[] => {
 
     // Check if it's already in the new format
     if (raw.contentData) {
-      return raw as Recommendation;
+      return item as Recommendation;
     }
 
     // Migration logic for malData (older format)
@@ -42,7 +42,7 @@ export const migrateData = (data: unknown[]): Recommendation[] => {
         },
         wbScore: raw.wbScore || 0,
         wbReasons: raw.wbReasons || [],
-        isElite: !!raw.isElite,
+        isElite: Boolean(raw.isElite),
       } as Recommendation;
     }
 

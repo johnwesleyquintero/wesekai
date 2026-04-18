@@ -165,6 +165,8 @@ export const ELITE_MANHWA: UnifiedContent[] = [
 let lastRefreshTime = 0;
 const REFRESH_COOLDOWN = 1000 * 60 * 60; // 1 hour rate limit
 
+const extractIdFromUrl = (url: string) => url.match(/\/(?:anime|manga)\/(\d+)/)?.[1] || null;
+
 export async function refreshEliteImages(): Promise<void> {
   const now = Date.now();
   if (now - lastRefreshTime < REFRESH_COOLDOWN) {
@@ -173,10 +175,7 @@ export async function refreshEliteImages(): Promise<void> {
   }
   lastRefreshTime = now;
 
-  const malIds = ELITE_ANIME.map(a => {
-    const match = a.url.match(/\/anime\/(\d+)/);
-    return match ? match[1] : null;
-  }).filter(Boolean);
+  const malIds = ELITE_ANIME.map(a => extractIdFromUrl(a.url)).filter(Boolean);
 
   for (const id of malIds) {
     try {
@@ -194,10 +193,7 @@ export async function refreshEliteImages(): Promise<void> {
     }
   }
 
-  const aniListIds = ELITE_MANHWA.map(m => {
-    const match = m.url.match(/\/manga\/(\d+)/);
-    return match ? match[1] : null;
-  }).filter(Boolean);
+  const aniListIds = ELITE_MANHWA.map(m => extractIdFromUrl(m.url)).filter(Boolean);
 
   if (aniListIds.length > 0) {
     const query = `

@@ -40,9 +40,11 @@ export function useRecommendationEngine() {
   const toastTimeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
 
   useEffect(() => {
+    const toastTimeouts = toastTimeoutsRef.current;
+
     return () => {
       if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
-      toastTimeoutsRef.current.forEach(clearTimeout);
+      toastTimeouts.forEach(clearTimeout);
     };
   }, []);
 
