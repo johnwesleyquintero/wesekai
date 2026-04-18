@@ -314,6 +314,7 @@ export const ResultCard: FC<{
   const [isFetchingTrailer, setIsFetchingTrailer] = useState(false);
   const [dynamicTrailerId, setDynamicTrailerId] = useState<string | undefined>(undefined);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
 
   const confidence = recommendation.confidenceScore || 0.5;
@@ -471,9 +472,19 @@ export const ResultCard: FC<{
 
           {/* Synopsis */}
           <div className="prose prose-invert prose-zinc max-w-none mb-8 sm:mb-10">
-            <p className="text-zinc-400 leading-relaxed text-sm sm:text-base md:text-lg line-clamp-6 md:line-clamp-none font-light">
+            <p
+              className={`text-zinc-400 leading-relaxed text-sm sm:text-base md:text-lg font-light transition-all duration-300 ${
+                isSynopsisExpanded ? '' : 'line-clamp-6'
+              } md:line-clamp-none`}
+            >
               {recommendation.contentData.synopsis}
             </p>
+            <button
+              onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
+              className="mt-2 text-xs font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 md:hidden"
+            >
+              {isSynopsisExpanded ? 'Show Less' : 'Read Full Synopsis'}
+            </button>
           </div>
 
           {/* Wesley Intelligence Analysis */}
@@ -496,11 +507,10 @@ export const ResultCard: FC<{
 
               {(hasTrailer || canFetchTrailer) && (
                 <LinkItem
-                  icon={isFetchingTrailer ? Loader2 : Play}
+                  icon={Play}
                   className={`text-zinc-400 hover:text-red-400 ${isFetchingTrailer ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onClick={handleTrailerClick}
                 >
-                  {isFetchingTrailer && <Loader2 className="w-4 h-4 animate-spin" />}
                   Trailer
                 </LinkItem>
               )}
