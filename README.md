@@ -9,6 +9,7 @@ WESEKAI is an advanced recommendation engine designed to model the evolution of 
 - **Behavioral Learning Engine:** Implements a damped learning algorithm to map user preferences without hitting "taste prison" local minima.
 - **Dual-Source Aggregation:** Real-time data fetching from MyAnimeList (Jikan API) and AniList (GraphQL).
 - **World-Building Analysis:** Proprietary scoring system that evaluates narrative depth based on thematic tag density.
+- **Hybrid Media Discovery:** Integrated YouTube API for trailer fetching with automated search fallbacks for series recaps.
 - **Explainable AI (XAI):** Integrated "Wesley Intelligence" provides natural language reasoning for every recommendation.
 - **Dynamic UI/UX:** Motion-driven interface where animation physics correspond to recommendation confidence levels.
 
@@ -20,7 +21,7 @@ The system operates on a sophisticated five-layer cognitive model:
 
 - **Vector Management:** Encapsulated in `useRecommendationEngine`, managing complex state transitions and feedback loops.
 - **Drift Suppression:** Identifies "frozen branches" (disliked genres) to hierarchically suppress irrelevant content using multi-stage multipliers.
-- **Semantic Extraction:** Utilizes pre-compiled regex patterns to normalize disparate metadata into a unified tag system.
+- **Semantic Extraction:** Utilizes pre-compiled, length-sorted regex patterns to normalize disparate metadata into a unified tag system.
 - **Damped Learning:** Employs saturation curves (`1 / (1 + |weight|)`) to ensure long-term profile stability.
 
 ### 2. Data Layer
@@ -44,8 +45,8 @@ The system operates on a sophisticated five-layer cognitive model:
 
 ### 5. Telemetry Layer
 
-- **Live Vector HUD:** A glassmorphic dashboard visualizing internal preference weights and telemetry in real-time.
-- **Persistence Engine:** Synchronizes state to `localStorage` with an automated migration layer for schema versioning.
+- **Live Vector HUD:** A glassmorphic dashboard (TelemetryModal) visualizing internal preference weights and session memory in real-time.
+- **Persistence Engine:** Synchronizes state to `localStorage` with a robust `migrateData` utility to reconcile legacy `malData` schemas with the current `UnifiedContent` standard.
 
 ## 🛠️ Tech Stack
 
