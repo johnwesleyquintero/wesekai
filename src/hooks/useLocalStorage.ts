@@ -93,6 +93,10 @@ export function useLocalStorage<T>(key: string, initialValue: T, migrate = false
       try {
         localStorage.setItem(key, JSON.stringify(value));
       } catch (error) {
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+          console.error('LocalStorage quota exceeded. Consider clearing the Dropped list.');
+          return;
+        }
         console.error(`Error saving localStorage key "${key}":`, error);
       }
     }, 500); // 500ms debounce to prevent I/O jank

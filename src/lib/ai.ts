@@ -4,12 +4,19 @@ import { Recommendation } from '../types';
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
+// Simple in-memory cache to prevent redundant API calls
+const analysisCache = new Map<string, string>();
+
 export async function getWesleyAnalysis(
   recommendation: Recommendation,
   userPreferences: Record<string, number>
 ): Promise<string> {
   if (!API_KEY) {
     return 'Intelligence Layer offline. (Missing API Key)';
+  }
+
+  if (analysisCache.has(recommendation.title)) {
+    return analysisCache.get(recommendation.title)!;
   }
 
   try {
@@ -40,14 +47,19 @@ export async function getWesleyAnalysis(
         model: 'gemini-2.0-flash',
         contents: prompt,
       });
-      return response.text || 'The Intelligence Layer processed the data but returned silence.';
+      const text =
+        response.text || 'The Intelligence Layer processed the data but returned silence.';
+      analysisCache.set(recommendation.title, text);
+      return text;
     } catch {
       // Secondary fallback to stable 1.5 if 2.0 has an outage
       const response = await ai.models.generateContent({
         model: 'gemini-1.5-flash-latest',
         contents: prompt,
       });
-      return response.text || 'Intelligence Layer fallback complete.';
+      const text = response.text || 'Intelligence Layer fallback complete.';
+      analysisCache.set(recommendation.title, text);
+      return text;
     }
   } catch (error) {
     console.error('Wesley Analysis Error:', error);
