@@ -86,6 +86,10 @@ export const SCORING_CONFIG = {
       SHOWN_2: 0.7,
       SKIPPED: 0.6,
     },
+    /** Constants for UI/Telemetry visualization */
+    VISUAL: {
+      MAX_WEIGHT_CAP: 3.0,
+    },
     /** Used to normalize the final score to a 0-1 range for confidence */
     NORMALIZATION_DIVISOR: 12.5,
     /** The floor/starting point for tag match scores */

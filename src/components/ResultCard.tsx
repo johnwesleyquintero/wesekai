@@ -1,4 +1,4 @@
-import { useState, memo, FC } from 'react';
+import { useState, memo, FC, useMemo } from 'react';
 import { motion, Variants, AnimatePresence } from 'motion/react';
 import {
   Crown,
@@ -160,13 +160,20 @@ export const ResultCard: FC<{
     }
   };
 
-  const externalLinks = {
-    database: recommendation.contentData.url,
-    watch:
-      recommendation.contentData.type === 'manhwa'
-        ? `https://mangadex.org/titles?q=${encodeURIComponent(recommendation.contentData.title)}`
-        : `https://aniwatchtv.to/search?keyword=${encodeURIComponent(recommendation.contentData.title)}`,
-  };
+  const externalLinks = useMemo(
+    () => ({
+      database: recommendation.contentData.url,
+      watch:
+        recommendation.contentData.type === 'manhwa'
+          ? `https://mangadex.org/titles?q=${encodeURIComponent(recommendation.contentData.title)}`
+          : `https://aniwatchtv.to/search?keyword=${encodeURIComponent(recommendation.contentData.title)}`,
+    }),
+    [
+      recommendation.contentData.url,
+      recommendation.contentData.title,
+      recommendation.contentData.type,
+    ]
+  );
 
   return (
     <motion.div

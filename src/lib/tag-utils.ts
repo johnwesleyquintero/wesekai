@@ -77,7 +77,7 @@ export function extractTagsFromText(text: string): Map<string, number> {
  */
 export function preProcessText(text: string): string {
   if (typeof text !== 'string' || !text) return '';
-  return text.trim().toLowerCase().replace(/\s\s+/g, ' ');
+  return text.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 /**

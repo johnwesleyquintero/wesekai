@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Network, X, AlertTriangle, RefreshCw } from 'lucide-react';
+import { SCORING_CONFIG } from '../lib/scoring-config';
 
 export function TelemetryModal({
   tagPreferences,
@@ -26,7 +27,7 @@ export function TelemetryModal({
       );
 
     const maxWeight = processed.coreOrbit.length > 0 ? processed.coreOrbit[0][1] : 0;
-    const pressure = Math.max(0.1, 1 - maxWeight / 3);
+    const pressure = Math.max(0.1, 1 - maxWeight / SCORING_CONFIG.ENGINE.VISUAL.MAX_WEIGHT_CAP);
     return { ...processed, explorationPressure: pressure };
   }, [tagPreferences]);
 
@@ -129,7 +130,7 @@ export function TelemetryModal({
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{
-                          width: `${Math.min(100, (weight / 3) * 100)}%`,
+                          width: `${Math.min(100, (weight / SCORING_CONFIG.ENGINE.VISUAL.MAX_WEIGHT_CAP) * 100)}%`,
                         }}
                         className="h-full bg-emerald-500 rounded-full"
                       />
@@ -159,7 +160,7 @@ export function TelemetryModal({
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{
-                          width: `${Math.min(100, (Math.abs(weight) / 3) * 100)}%`,
+                          width: `${Math.min(100, (Math.abs(weight) / SCORING_CONFIG.ENGINE.VISUAL.MAX_WEIGHT_CAP) * 100)}%`,
                         }}
                         className="h-full bg-red-500 rounded-full"
                       />
