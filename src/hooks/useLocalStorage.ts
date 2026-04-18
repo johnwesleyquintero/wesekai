@@ -89,11 +89,15 @@ export function useLocalStorage<T>(key: string, initialValue: T, migrate = false
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-      console.error(`Error saving localStorage key "${key}":`, error);
-    }
+    const handler = setTimeout(() => {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (error) {
+        console.error(`Error saving localStorage key "${key}":`, error);
+      }
+    }, 500); // 500ms debounce to prevent I/O jank
+
+    return () => clearTimeout(handler);
   }, [key, value]);
 
   const updateValue = useCallback((newValue: T | ((prev: T) => T)) => {

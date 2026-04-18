@@ -76,8 +76,8 @@ export function extractTagsFromText(text: string): Map<string, number> {
  * Sanitizes text for tag extraction by removing extra whitespace.
  */
 export function preProcessText(text: string): string {
-  if (!text) return '';
-  return text.toLowerCase().replace(/\s+/g, ' ');
+  if (typeof text !== 'string' || !text) return '';
+  return text.trim().toLowerCase().replace(/\s\s+/g, ' ');
 }
 
 /**

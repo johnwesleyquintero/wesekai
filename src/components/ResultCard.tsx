@@ -160,6 +160,14 @@ export const ResultCard: FC<{
     }
   };
 
+  const externalLinks = {
+    database: recommendation.contentData.url,
+    watch:
+      recommendation.contentData.type === 'manhwa'
+        ? `https://mangadex.org/titles?q=${encodeURIComponent(recommendation.contentData.title)}`
+        : `https://aniwatchtv.to/search?keyword=${encodeURIComponent(recommendation.contentData.title)}`,
+  };
+
   return (
     <motion.div
       custom={{ confidence, exitAction: localExit }}
@@ -368,7 +376,7 @@ export const ResultCard: FC<{
           <div className="mt-auto pt-6 sm:pt-8 border-t border-zinc-800/60 flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-6">
             <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4 md:gap-6">
               <a
-                href={recommendation.contentData.url}
+                href={externalLinks.database}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-indigo-300 transition-colors"
@@ -403,11 +411,7 @@ export const ResultCard: FC<{
                 Recap
               </a>
               <a
-                href={
-                  recommendation.contentData.type === 'manhwa'
-                    ? `https://mangadex.org/titles?q=${encodeURIComponent(recommendation.contentData.title)}`
-                    : `https://aniwatchtv.to/search?keyword=${encodeURIComponent(recommendation.contentData.title)}`
-                }
+                href={externalLinks.watch}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group/link inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-purple-400 transition-colors"

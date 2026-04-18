@@ -170,7 +170,7 @@ const REFRESH_COOLDOWN = 1000 * 60 * 60; // 1 hour rate limit
  * Matches the first numeric segment following /anime/ or /manga/.
  */
 const extractIdFromUrl = (url: string) =>
-  url.trim().match(/\/(?:anime|manga)\/(\d+)/i)?.[1] || null;
+  url.trim().match(/\/(?:anime|manga)\/(\d+)(?:\/|$)/i)?.[1] || null;
 
 export async function refreshEliteImages(): Promise<void> {
   const now = Date.now();
@@ -181,6 +181,7 @@ export async function refreshEliteImages(): Promise<void> {
   lastRefreshTime = now;
 
   const malTasks = ELITE_ANIME.map(async anime => {
+    if (anime.imageUrl.includes('webp')) return; // Already optimized
     const id = extractIdFromUrl(anime.url);
     if (!id) return;
     const data = await apiManager.fetchWithRetry<{
