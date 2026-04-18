@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Network, X, AlertTriangle, RefreshCw } from 'lucide-react';
 
@@ -13,19 +13,22 @@ export function TelemetryModal({
 }) {
   const [showConfirmReset, setShowConfirmReset] = useState(false);
 
-  const { coreOrbit, frozenBranches } = Object.entries(tagPreferences)
-    .sort((a, b) => b[1] - a[1])
-    .reduce(
-      (acc, curr) => {
-        if (curr[1] > 0) acc.coreOrbit.push(curr);
-        else if (curr[1] < 0) acc.frozenBranches.unshift(curr); // unshift keeps the strongest negative at the top
-        return acc;
-      },
-      { coreOrbit: [] as [string, number][], frozenBranches: [] as [string, number][] }
-    );
+  const { coreOrbit, frozenBranches, explorationPressure } = useMemo(() => {
+    const processed = Object.entries(tagPreferences)
+      .sort((a, b) => b[1] - a[1])
+      .reduce(
+        (acc, curr) => {
+          if (curr[1] > 0) acc.coreOrbit.push(curr);
+          else if (curr[1] < 0) acc.frozenBranches.unshift(curr);
+          return acc;
+        },
+        { coreOrbit: [] as [string, number][], frozenBranches: [] as [string, number][] }
+      );
 
-  const maxWeight = coreOrbit.length > 0 ? coreOrbit[0][1] : 0;
-  const explorationPressure = Math.max(0.1, 1 - maxWeight / 3); // Decays as max weight approaches 3
+    const maxWeight = processed.coreOrbit.length > 0 ? processed.coreOrbit[0][1] : 0;
+    const pressure = Math.max(0.1, 1 - maxWeight / 3);
+    return { ...processed, explorationPressure: pressure };
+  }, [tagPreferences]);
 
   const handleReset = () => {
     localStorage.removeItem('wesekai_arsenal');

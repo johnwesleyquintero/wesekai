@@ -175,57 +175,55 @@ export async function refreshEliteImages(): Promise<void> {
   }
   lastRefreshTime = now;
 
-  const malIds = ELITE_ANIME.map(a => extractIdFromUrl(a.url)).filter(Boolean);
-
-  for (const id of malIds) {
-    try {
-      // apiManager already has retry/exponential backoff and throttling
-      const data = await apiManager.fetchWithRetry<{
-        data: { images: { webp?: { large_image_url: string } } };
-      }>(`https://api.jikan.moe/v4/anime/${id}`);
-      const newUrl = data.data?.images?.webp?.large_image_url;
-      if (newUrl) {
-        const elite = ELITE_ANIME.find(a => a.url.includes(`/anime/${id}`));
-        if (elite) elite.imageUrl = newUrl;
-      }
-    } catch (e) {
-      console.warn(`Failed to refresh image for anime ${id}, keeping original:`, e);
+  const malTasks = ELITE_ANIME.map(async anime => {
+    const id = extractIdFromUrl(anime.url);
+    if (!id) return;
+    const data = await apiManager.fetchWithRetry<{
+      data: { images: { webp?: { large_image_url: string } } };
+    }>(`https://api.jikan.moe/v4/anime/${id}`);
+    const newUrl = data.data?.images?.webp?.large_image_url;
+    if (newUrl) {
+      anime.imageUrl = newUrl;
     }
+  });
+
+  const results = await Promise.allSettled(malTasks);
+  const failed = results.filter(r => r.status === 'rejected');
+  if (failed.length) {
+    console.warn(`[DATA: SYNC] Failed to refresh ${failed.length} elite anime images.`);
   }
 
-  const aniListIds = ELITE_MANHWA.map(m => extractIdFromUrl(m.url)).filter(Boolean);
+  const manhwaTasks = ELITE_MANHWA.map(async manhwa => {
+    const id = extractIdFromUrl(manhwa.url);
+    if (!id) return;
 
-  if (aniListIds.length > 0) {
     const query = `
-      query ($ids: [Int]) {
-        Page {
-          media(id_in: $ids, type: MANGA) {
-            id
-            coverImage {
-              large
-            }
+      query ($id: Int) {
+        Media(id: $id, type: MANGA) {
+          coverImage {
+            large
           }
         }
       }
     `;
 
-    try {
-      const data = await apiManager.fetchWithRetry<{
-        data: { Page: { media: { id: number; coverImage: { large: string } }[] } };
-      }>('https://graphql.anilist.co', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, variables: { ids: aniListIds.map(Number) } }),
-      });
+    const data = await apiManager.fetchWithRetry<{
+      data: { Media: { coverImage: { large: string } } };
+    }>('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { id: Number(id) } }),
+    });
 
-      data.data?.Page?.media?.forEach(m => {
-        const elite = ELITE_MANHWA.find(item => item.url.includes(`/manga/${m.id}`));
-        if (elite && m.coverImage?.large) {
-          elite.imageUrl = m.coverImage.large;
-        }
-      });
-    } catch (e) {
-      console.warn('Failed to refresh images for elite manhwa, keeping originals:', e);
+    const newUrl = data.data?.Media?.coverImage?.large;
+    if (newUrl) {
+      manhwa.imageUrl = newUrl;
     }
+  });
+
+  const manhwaResults = await Promise.allSettled(manhwaTasks);
+  const manhwaFailed = manhwaResults.filter(r => r.status === 'rejected');
+  if (manhwaFailed.length) {
+    console.warn(`[DATA: SYNC] Failed to refresh ${manhwaFailed.length} elite manhwa images.`);
   }
 }
