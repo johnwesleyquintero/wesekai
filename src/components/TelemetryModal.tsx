@@ -8,7 +8,7 @@ export function TelemetryModal({
   onClose,
 }: {
   tagPreferences: Record<string, number>;
-  sessionMemory: { shown: Record<string, number>; skipped: Set<string> };
+  sessionMemory: { shown: Record<string, number>; skipped: Record<string, boolean> };
   onClose: () => void;
 }) {
   const [showConfirmReset, setShowConfirmReset] = useState(false);
@@ -95,7 +95,7 @@ export function TelemetryModal({
             </div>
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex flex-col items-center justify-center text-center">
               <span className="text-3xl font-display font-bold text-red-400 mb-1">
-                {sessionMemory.skipped.size}
+                {Object.keys(sessionMemory.skipped).length}
               </span>
               <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">
                 Skipped

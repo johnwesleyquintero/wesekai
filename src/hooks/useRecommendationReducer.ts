@@ -11,7 +11,7 @@ export type Action =
   | { type: 'SET_CURRENT_REC'; payload: Recommendation | null }
   | {
       type: 'UPDATE_SESSION_MEMORY';
-      payload: { shown?: Record<string, number>; skipped?: Set<string> };
+      payload: { shown?: Record<string, number>; skipped?: Record<string, boolean> };
     }
   | { type: 'SET_TAG_PREFERENCES'; payload: Record<string, number> }
   | { type: 'SET_THINKING'; payload: boolean }
@@ -29,7 +29,7 @@ export interface State {
   currentRec: Recommendation | null;
   sessionMemory: {
     shown: Record<string, number>;
-    skipped: Set<string>;
+    skipped: Record<string, boolean>;
   };
   tagPreferences: Record<string, number>;
   isThinking: boolean;
@@ -45,7 +45,7 @@ export const initialState: State = {
   droppedList: [],
   candidatePool: [],
   currentRec: null,
-  sessionMemory: { shown: {}, skipped: new Set() },
+  sessionMemory: { shown: {}, skipped: {} },
   tagPreferences: {},
   isThinking: false,
 };
@@ -73,7 +73,7 @@ export function recommendationReducer(state: State, action: Action): State {
         ...state,
         sessionMemory: {
           shown: { ...state.sessionMemory.shown, ...action.payload.shown },
-          skipped: action.payload.skipped || state.sessionMemory.skipped,
+          skipped: { ...state.sessionMemory.skipped, ...action.payload.skipped },
         },
       };
     case 'SET_TAG_PREFERENCES':

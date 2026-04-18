@@ -1,3 +1,5 @@
+import { Recommendation } from '../types';
+
 export interface ScoringResult {
   score: number;
   reasons: string[];
@@ -80,4 +82,111 @@ export function calculateWorldBuildingScore(tags: string[]): ScoringResult {
     score: finalScore,
     reasons: uniqueReasons.length > 0 ? uniqueReasons : ['+ Standard World-Building'],
   };
+}
+
+export function calculateRecommendationScore(
+  rec: Recommendation,
+  watchlistUrls: Set<string>,
+  droppedUrls: Set<string>,
+  tagPreferences: Record<string, number>,
+  sessionMemory: {
+    shown: Record<string, number>;
+    skipped: Record<string, boolean>;
+  }
+): {
+  score: number;
+  confidence: number;
+  drift: number;
+} | null {
+  if (!rec?.contentData?.url) return null;
+  if (watchlistUrls.has(rec.contentData.url)) return null;
+  if (droppedUrls.has(rec.contentData.url)) return null;
+
+  let rawTagScore = 0;
+  let frozenBranchHits = 0;
+  let positiveHits = 0;
+
+  rec.tags.forEach(tag => {
+    const weight = tagPreferences[tag] || 0;
+    rawTagScore += weight;
+    if (weight <= -1.0) frozenBranchHits++;
+    if (weight >= 1.0) positiveHits++;
+  });
+
+  let driftMultiplier = 1.0;
+  if (frozenBranchHits >= 2) driftMultiplier = 0.1;
+  else if (frozenBranchHits === 1) driftMultiplier = 0.4;
+  if (positiveHits >= 2) driftMultiplier *= 1.3;
+
+  const tagMatchScore = Math.max(0, Math.min(10, 5 + rawTagScore));
+  const currentYear = new Date().getFullYear();
+  const age = Math.max(0, currentYear - (rec.contentData.year || 2015));
+  const recencyBonus = Math.max(0, 2.5 - age * 0.25);
+
+  let finalScore =
+    rec.wbScore * 0.4 +
+    rec.contentData.score * 0.2 +
+    tagMatchScore * 0.2 +
+    recencyBonus +
+    (rec.isElite ? 2.0 : 0);
+
+  finalScore *= driftMultiplier;
+
+  const shownCount = sessionMemory.shown[rec.contentData.url] || 0;
+  if (shownCount >= 3) finalScore *= 0.4;
+  else if (shownCount >= 2) finalScore *= 0.7;
+  if (sessionMemory.skipped[rec.contentData.url]) finalScore *= 0.6;
+
+  const normalizedScore = Math.min(1, finalScore / 12.5);
+  const confidenceScore = Math.max(0, Math.min(1, normalizedScore * driftMultiplier));
+
+  return {
+    score: finalScore,
+    confidence: confidenceScore,
+    drift: driftMultiplier,
+  };
+}
+
+export function findBestRecommendation(
+  candidatePool: Recommendation[],
+  watchlistUrls: Set<string>,
+  droppedUrls: Set<string>,
+  tagPreferences: Record<string, number>,
+  sessionMemory: {
+    shown: Record<string, number>;
+    skipped: Record<string, boolean>;
+  }
+): (Recommendation & { confidenceScore: number; driftMultiplier: number }) | null {
+  let bestRec: (Recommendation & { confidenceScore: number; driftMultiplier: number }) | null =
+    null;
+  let bestScore = -Infinity;
+
+  for (const rec of candidatePool) {
+    const scoringResult = calculateRecommendationScore(
+      rec,
+      watchlistUrls,
+      droppedUrls,
+      tagPreferences,
+      sessionMemory
+    );
+
+    if (!scoringResult) continue;
+
+    const {
+      score: finalScore,
+      confidence: confidenceScore,
+      drift: driftMultiplier,
+    } = scoringResult;
+
+    if (finalScore > bestScore) {
+      bestScore = finalScore;
+      bestRec = {
+        ...rec,
+        confidenceScore,
+        driftMultiplier,
+      };
+    }
+  }
+
+  return bestRec;
 }

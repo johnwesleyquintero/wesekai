@@ -1,7 +1,7 @@
 import { useReducer, useEffect, useCallback, useState, useRef } from 'react';
 import { fetchTopAnimeList } from '../lib/mal';
 import { fetchTopManhwa } from '../lib/anilist';
-import { calculateWorldBuildingScore } from '../lib/scoring';
+import { calculateWorldBuildingScore, findBestRecommendation } from '../lib/scoring';
 import { ELITE_ANIME, ELITE_MANHWA } from '../lib/elite';
 import { WESEKAI_CONSTANTS } from '../wesekai.constants';
 import { Recommendation, UnifiedContent } from '../types';
@@ -19,33 +19,30 @@ export interface Toast {
   type: 'success' | 'info' | 'error';
 }
 
+const loadPersistedData = (key: string): Recommendation[] => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? migrateData(JSON.parse(saved)) : [];
+  } catch {
+    return [];
+  }
+};
+
 export function useRecommendationEngine() {
   const [state, dispatch] = useReducer(recommendationReducer, {
     ...initialState,
-    watchlist: (() => {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEYS.WATCHLIST);
-        return saved ? migrateData(JSON.parse(saved)) : [];
-      } catch {
-        return [];
-      }
-    })(),
-    droppedList: (() => {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEYS.DROPPED);
-        return saved ? migrateData(JSON.parse(saved)) : [];
-      } catch {
-        return [];
-      }
-    })(),
+    watchlist: loadPersistedData(STORAGE_KEYS.WATCHLIST),
+    droppedList: loadPersistedData(STORAGE_KEYS.DROPPED),
   });
 
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const thinkingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const thinkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
 
   useEffect(() => {
     return () => {
       if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
+      toastTimeoutsRef.current.forEach(clearTimeout);
     };
   }, []);
 
@@ -67,9 +64,11 @@ export function useRecommendationEngine() {
   const addToast = useCallback((message: string, type: Toast['type'] = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
+      toastTimeoutsRef.current.delete(timeout);
     }, 3000);
+    toastTimeoutsRef.current.add(timeout);
   }, []);
 
   // Persistence
@@ -175,74 +174,41 @@ export function useRecommendationEngine() {
   }, [activeFilter, mediaType, dispatch]);
 
   useEffect(() => {
-    fetchRecommendations();
+    let isMounted = true;
+    const handler = setTimeout(() => {
+      if (isMounted) {
+        fetchRecommendations();
+      }
+    }, 400); // Debounce filter/media changes
+
+    return () => {
+      isMounted = false;
+      clearTimeout(handler);
+    };
   }, [fetchRecommendations, activeFilter, mediaType]);
 
   const computeNext = useCallback(() => {
     if (candidatePool.length === 0) return;
 
-    let bestRec: Recommendation | null = null;
-    let bestScore = -Infinity;
-
     const watchlistUrls = new Set(watchlist.map(w => w.contentData.url));
     const droppedUrls = new Set(droppedList.map(d => d.contentData.url));
-    const currentYear = new Date().getFullYear();
-    const tagPrefs = tagPreferences; // Capture for stable reference
 
-    (candidatePool as Recommendation[]).forEach((rec: Recommendation) => {
-      if (!rec?.contentData?.url) return;
-      if (watchlistUrls.has(rec.contentData.url)) return;
-      if (droppedUrls.has(rec.contentData.url)) return;
-
-      let rawTagScore = 0;
-      let frozenBranchHits = 0;
-      let positiveHits = 0;
-
-      rec.tags.forEach(tag => {
-        const weight = tagPrefs[tag] || 0;
-        rawTagScore += weight;
-        if (weight <= -1.0) frozenBranchHits++;
-        if (weight >= 1.0) positiveHits++;
-      });
-
-      let driftMultiplier = 1.0;
-      if (frozenBranchHits >= 2) driftMultiplier = 0.1;
-      else if (frozenBranchHits === 1) driftMultiplier = 0.4;
-      if (positiveHits >= 2) driftMultiplier *= 1.3;
-
-      const tagMatchScore = Math.max(0, Math.min(10, 5 + rawTagScore));
-      const age = Math.max(0, currentYear - (rec.contentData.year || 2015));
-      const recencyBonus = Math.max(0, 2.5 - age * 0.25);
-
-      let finalScore =
-        rec.wbScore * 0.4 +
-        rec.contentData.score * 0.2 +
-        tagMatchScore * 0.2 +
-        recencyBonus +
-        (rec.isElite ? 2.0 : 0);
-
-      finalScore *= driftMultiplier;
-
-      const shownCount = sessionMemory.shown[rec.contentData.url] || 0;
-      if (shownCount >= 3) finalScore *= 0.4;
-      else if (shownCount >= 2) finalScore *= 0.7;
-      if (sessionMemory.skipped.has(rec.contentData.url)) finalScore *= 0.6;
-
-      if (finalScore > bestScore) {
-        bestScore = finalScore;
-        const normalizedScore = Math.min(1, finalScore / 12.5);
-        const confidenceScore = Math.max(0, Math.min(1, normalizedScore * driftMultiplier));
-        bestRec = { ...rec, confidenceScore, driftMultiplier };
-      }
-    });
+    const bestRec = findBestRecommendation(
+      candidatePool,
+      watchlistUrls,
+      droppedUrls,
+      tagPreferences,
+      sessionMemory
+    );
 
     if (bestRec) {
-      const rec = bestRec as Recommendation;
-      dispatch({ type: 'SET_CURRENT_REC', payload: rec });
+      dispatch({ type: 'SET_CURRENT_REC', payload: bestRec });
       dispatch({
         type: 'UPDATE_SESSION_MEMORY',
         payload: {
-          shown: { [rec.contentData.url]: (sessionMemory.shown[rec.contentData.url] || 0) + 1 },
+          shown: {
+            [bestRec.contentData.url]: (sessionMemory.shown[bestRec.contentData.url] || 0) + 1,
+          },
         },
       });
     } else {
@@ -287,9 +253,10 @@ export function useRecommendationEngine() {
 
   const handleSkip = useCallback(
     (rec: Recommendation) => {
-      const newSkipped = new Set(sessionMemory.skipped);
-      newSkipped.add(rec.contentData.url);
-      dispatch({ type: 'UPDATE_SESSION_MEMORY', payload: { skipped: newSkipped } });
+      dispatch({
+        type: 'UPDATE_SESSION_MEMORY',
+        payload: { skipped: { [rec.contentData.url]: true } },
+      });
       const nextPrefs = { ...tagPreferences };
       rec.tags.forEach(t => {
         const current = nextPrefs[t] || 0;
@@ -299,7 +266,7 @@ export function useRecommendationEngine() {
       addToast(`Skipped ${rec.title}`, 'info');
       triggerNext();
     },
-    [sessionMemory.skipped, tagPreferences, triggerNext, addToast]
+    [tagPreferences, triggerNext, addToast]
   );
 
   const handleDrop = useCallback(

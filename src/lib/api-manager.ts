@@ -17,11 +17,35 @@ export class ApiError extends Error {
 }
 
 const DEFAULT_CACHE_TTL = 1000 * 60 * 30; // 30 minutes
+const PERSISTENT_CACHE_KEY = 'wesekai_api_cache';
 
 class ApiManager {
   private cache = new Map<string, CacheEntry<unknown>>();
   private lastRequestTimestamp = 0;
   private minDelayBetweenRequests = 400; // ~2.5 requests per second for safety
+
+  constructor() {
+    this.hydrate();
+  }
+
+  private hydrate() {
+    try {
+      const saved = localStorage.getItem(PERSISTENT_CACHE_KEY);
+      if (saved) {
+        const data = JSON.parse(saved);
+        const now = Date.now();
+        Object.entries(data).forEach(([key, value]) => {
+          const entry = value as CacheEntry<unknown>;
+          // Only keep entries that haven't expired
+          if (now - entry.timestamp < DEFAULT_CACHE_TTL) {
+            this.cache.set(key, entry);
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('[API: PERSISTENCE] Failed to hydrate cache:', e);
+    }
+  }
 
   private async throttle() {
     const now = Date.now();
@@ -89,10 +113,21 @@ class ApiManager {
 
   setCache<T>(key: string, data: T): void {
     this.cache.set(key, { data, timestamp: Date.now() });
+    this.persist();
+  }
+
+  private persist() {
+    try {
+      const data = Object.fromEntries(this.cache.entries());
+      localStorage.setItem(PERSISTENT_CACHE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.warn('[API: PERSISTENCE] Failed to save cache:', e);
+    }
   }
 
   clearCache(): void {
     this.cache.clear();
+    localStorage.removeItem(PERSISTENT_CACHE_KEY);
   }
 }
 
