@@ -6,9 +6,10 @@ type LegacyRecommendation = Partial<Recommendation> & {
     title?: string;
     tags?: string[];
     [key: string]: unknown;
-  };
+  } & Record<string, unknown>;
   url?: string;
   title?: string;
+  isElite?: boolean;
   tags?: string[];
 };
 
@@ -76,7 +77,8 @@ export function useLocalStorage<T>(key: string, initialValue: T, migrate = false
       if (!saved) return initialValue;
 
       const parsed = JSON.parse(saved);
-      if (migrate && Array.isArray(parsed)) {
+      // Only attempt migration if we are in migrate mode and dealing with an array
+      if (migrate && Array.isArray(parsed) && parsed.length > 0) {
         return migrateData(parsed) as unknown as T;
       }
       return parsed;

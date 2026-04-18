@@ -59,12 +59,11 @@ const COMPILED_REGEX_MAP = new Map<string, RegExp>(
  */
 export function extractTagsFromText(text: string): Map<string, number> {
   const tagWeights = new Map<string, number>();
-  if (!text) return tagWeights;
-
-  const textLower = text.toLowerCase();
+  const normalizedText = preProcessText(text);
+  if (!normalizedText) return tagWeights;
 
   COMPILED_REGEX_MAP.forEach((regex, tag) => {
-    const matches = textLower.match(regex);
+    const matches = normalizedText.match(regex);
     if (matches) {
       tagWeights.set(tag, matches.length);
     }

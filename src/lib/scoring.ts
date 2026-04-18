@@ -1,58 +1,14 @@
 import { Recommendation } from '../types';
+import { SCORING_CONFIG } from './scoring-config';
 
 export interface ScoringResult {
   score: number;
   reasons: string[];
 }
 
-const TAG_WEIGHTS: Record<string, number> = {
-  civilization: 3.0,
-  kingdom: 2.5,
-  empire: 2.5,
-  economy: 2.5,
-  politics: 2.5,
-  nation: 2.5,
-  strategy: 2.5,
-  diplomacy: 2.0,
-  rebuild: 2.0,
-  science: 2.0,
-  technology: 2.0,
-  trade: 1.5,
-  agriculture: 1.5,
-  society: 1.5,
-  military: 1.5,
-  npc: 1.0,
-  guild: 1.5,
-  systems: 1.5,
-  games: 1.0,
-  conquest: 1.5,
-  invention: 1.5,
-  community: 1.0,
-  village: 1.0,
-  merchants: 1.5,
-  isekai: 1.0,
-  reincarnation: 1.0,
-  fantasy: 0.5,
-  magic: 0.5,
-  'demon lord': 0.5,
-  adventure: 0.5,
-};
-
-const SYNERGIES = [
-  { tags: ['kingdom', 'diplomacy'], bonus: 1.0, reason: '+ Kingdom Diplomacy' },
-  { tags: ['economy', 'trade'], bonus: 1.0, reason: '+ Economic Trade' },
-  { tags: ['politics', 'economy'], bonus: 1.5, reason: '+ Political Economy' },
-  { tags: ['civilization', 'science'], bonus: 1.5, reason: '+ Scientific Advancement' },
-  { tags: ['agriculture', 'economy'], bonus: 1.0, reason: '+ Agricultural Economy' },
-  { tags: ['rebuild', 'society'], bonus: 1.0, reason: '+ Societal Rebuilding' },
-  { tags: ['strategy', 'military'], bonus: 1.0, reason: '+ Military Strategy' },
-  { tags: ['invention', 'economy'], bonus: 1.0, reason: '+ Economic Invention' },
-  { tags: ['kingdom', 'nation'], bonus: 0.5 },
-  { tags: ['isekai', 'kingdom'], bonus: 0.5 },
-];
-
 export function calculateWorldBuildingScore(tags: string[]): ScoringResult {
-  let score = 1.0;
+  const { TAG_WEIGHTS, SYNERGIES, WB } = SCORING_CONFIG;
+  let score = WB.INITIAL_SCORE;
   const reasons: string[] = [];
   const tagSet = new Set(tags.map(t => t.toLowerCase()));
 
@@ -60,11 +16,11 @@ export function calculateWorldBuildingScore(tags: string[]): ScoringResult {
     const weight = TAG_WEIGHTS[tag];
     if (weight) {
       score += weight;
-      if (weight >= 1.5) {
+      if (weight >= WB.REASON_THRESHOLD) {
         reasons.push(`+ ${tag.charAt(0).toUpperCase() + tag.slice(1)}`);
       }
     } else {
-      score += 0.5;
+      score += WB.UNKNOWN_TAG_WEIGHT;
     }
   }
 
@@ -75,12 +31,12 @@ export function calculateWorldBuildingScore(tags: string[]): ScoringResult {
     }
   }
 
-  const finalScore = Math.min(10.0, Math.round(score * 10) / 10);
-  const uniqueReasons = Array.from(new Set(reasons)).slice(0, 3);
+  const finalScore = Math.min(WB.MAX_SCORE, Math.round(score * 10) / 10);
+  const uniqueReasons = Array.from(new Set(reasons)).slice(0, WB.MAX_REASONS);
 
   return {
     score: finalScore,
-    reasons: uniqueReasons.length > 0 ? uniqueReasons : ['+ Standard World-Building'],
+    reasons: uniqueReasons.length > 0 ? uniqueReasons : [WB.DEFAULT_REASON],
   };
 }
 
@@ -98,6 +54,8 @@ export function calculateRecommendationScore(
   confidence: number;
   drift: number;
 } | null {
+  const { ENGINE } = SCORING_CONFIG;
+
   if (!rec?.contentData?.url) return null;
   if (watchlistUrls.has(rec.contentData.url)) return null;
   if (droppedUrls.has(rec.contentData.url)) return null;
@@ -109,35 +67,41 @@ export function calculateRecommendationScore(
   rec.tags.forEach(tag => {
     const weight = tagPreferences[tag] || 0;
     rawTagScore += weight;
-    if (weight <= -1.0) frozenBranchHits++;
-    if (weight >= 1.0) positiveHits++;
+    if (weight <= ENGINE.FROZEN_BRANCH_THRESHOLD) frozenBranchHits++;
+    if (weight >= ENGINE.POSITIVE_HIT_THRESHOLD) positiveHits++;
   });
 
   let driftMultiplier = 1.0;
-  if (frozenBranchHits >= 2) driftMultiplier = 0.1;
-  else if (frozenBranchHits === 1) driftMultiplier = 0.4;
-  if (positiveHits >= 2) driftMultiplier *= 1.3;
+  if (frozenBranchHits >= 2) driftMultiplier = ENGINE.DRIFT.HEAVY_PENALTY;
+  else if (frozenBranchHits === 1) driftMultiplier = ENGINE.DRIFT.LIGHT_PENALTY;
+  if (positiveHits >= 2) driftMultiplier *= ENGINE.DRIFT.BOOST;
 
-  const tagMatchScore = Math.max(0, Math.min(10, 5 + rawTagScore));
+  const tagMatchScore = Math.max(
+    0,
+    Math.min(ENGINE.MAX_TAG_MATCH_SCORE, ENGINE.BASE_TAG_MATCH_OFFSET + rawTagScore)
+  );
   const currentYear = new Date().getFullYear();
-  const age = Math.max(0, currentYear - (rec.contentData.year || 2015));
-  const recencyBonus = Math.max(0, 2.5 - age * 0.25);
+  const age = Math.max(0, currentYear - (rec.contentData.year || ENGINE.RECENCY.FALLBACK_YEAR));
+  const recencyBonus = Math.max(0, ENGINE.RECENCY.MAX_BONUS - age * ENGINE.RECENCY.DECAY_RATE);
 
   let finalScore =
-    rec.wbScore * 0.4 +
-    rec.contentData.score * 0.2 +
-    tagMatchScore * 0.2 +
+    rec.wbScore * ENGINE.WEIGHTS.WB_SCORE +
+    rec.contentData.score * ENGINE.WEIGHTS.COMMUNITY_SCORE +
+    tagMatchScore * ENGINE.WEIGHTS.TAG_MATCH +
     recencyBonus +
-    (rec.isElite ? 2.0 : 0);
+    (rec.isElite ? ENGINE.WEIGHTS.ELITE_BONUS : 0);
 
   finalScore *= driftMultiplier;
 
   const shownCount = sessionMemory.shown[rec.contentData.url] || 0;
-  if (shownCount >= 3) finalScore *= 0.4;
-  else if (shownCount >= 2) finalScore *= 0.7;
-  if (sessionMemory.skipped[rec.contentData.url]) finalScore *= 0.6;
+  if (shownCount >= 3) finalScore *= ENGINE.MEMORY_PENALTY.SHOWN_3_PLUS;
+  else if (shownCount >= 2) finalScore *= ENGINE.MEMORY_PENALTY.SHOWN_2;
 
-  const normalizedScore = Math.min(1, finalScore / 12.5);
+  if (sessionMemory.skipped[rec.contentData.url]) {
+    finalScore *= ENGINE.MEMORY_PENALTY.SKIPPED;
+  }
+
+  const normalizedScore = Math.min(1, finalScore / ENGINE.NORMALIZATION_DIVISOR);
   const confidenceScore = Math.max(0, Math.min(1, normalizedScore * driftMultiplier));
 
   return {
