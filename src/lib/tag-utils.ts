@@ -44,7 +44,10 @@ export const KEYWORD_SYNONYMS: Record<string, string[]> = {
 // Pre-compiled regex map for performance optimization
 const COMPILED_REGEX_MAP = new Map<string, RegExp>(
   Object.entries(KEYWORD_SYNONYMS).map(([tag, synonyms]) => {
-    const uniqueKeywords = Array.from(new Set([tag, ...synonyms]));
+    // Sort by length descending to ensure longer phrases match before shorter sub-words
+    const uniqueKeywords = Array.from(new Set([tag, ...synonyms])).sort(
+      (a, b) => b.length - a.length
+    );
     return [tag, new RegExp(`\\b(${uniqueKeywords.join('|')})\\b`, 'gi')];
   })
 );
@@ -68,6 +71,14 @@ export function extractTagsFromText(text: string): Map<string, number> {
   });
 
   return tagWeights;
+}
+
+/**
+ * Sanitizes text for tag extraction by removing extra whitespace.
+ */
+export function preProcessText(text: string): string {
+  if (!text) return '';
+  return text.toLowerCase().replace(/\s+/g, ' ');
 }
 
 /**

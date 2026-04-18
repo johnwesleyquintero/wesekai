@@ -191,16 +191,6 @@ export async function refreshEliteImages(): Promise<void> {
     }
   });
 
-  const results = await Promise.allSettled(malTasks);
-  const malErrors = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
-
-  if (malErrors.length) {
-    console.warn(
-      `[DATA: SYNC] Failed to refresh ${malErrors.length} elite anime images.`,
-      malErrors.map(e => e.reason)
-    );
-  }
-
   const manhwaTasks = ELITE_MANHWA.map(async manhwa => {
     const id = extractIdFromUrl(manhwa.url);
     if (!id) return;
@@ -229,7 +219,20 @@ export async function refreshEliteImages(): Promise<void> {
     }
   });
 
-  const manhwaResults = await Promise.allSettled(manhwaTasks);
+  // Execute both Anime and Manhwa refreshes concurrently
+  const [malResults, manhwaResults] = await Promise.all([
+    Promise.allSettled(malTasks),
+    Promise.allSettled(manhwaTasks),
+  ]);
+
+  const malErrors = malResults.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+  if (malErrors.length) {
+    console.warn(
+      `[DATA: SYNC] Failed to refresh ${malErrors.length} elite anime images.`,
+      malErrors.map(e => e.reason)
+    );
+  }
+
   const manhwaErrors = manhwaResults.filter(
     (r): r is PromiseRejectedResult => r.status === 'rejected'
   );
