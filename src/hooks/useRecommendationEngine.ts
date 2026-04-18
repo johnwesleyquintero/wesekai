@@ -5,7 +5,7 @@ import { calculateWorldBuildingScore, findBestRecommendation } from '../lib/scor
 import { ELITE_ANIME, ELITE_MANHWA } from '../lib/elite';
 import { WESEKAI_CONSTANTS } from '../wesekai.constants';
 import { Recommendation, UnifiedContent } from '../types';
-import { recommendationReducer, initialState } from './useRecommendationReducer';
+import { recommendationReducer, initialState, State } from './useRecommendationReducer';
 import { migrateData } from './useLocalStorage';
 
 const STORAGE_KEYS = {
@@ -28,12 +28,18 @@ const loadPersistedData = (key: string): Recommendation[] => {
   }
 };
 
+const initRecommendationState = (initial: State): State => ({
+  ...initial,
+  watchlist: loadPersistedData(STORAGE_KEYS.WATCHLIST),
+  droppedList: loadPersistedData(STORAGE_KEYS.DROPPED),
+});
+
 export function useRecommendationEngine() {
-  const [state, dispatch] = useReducer(recommendationReducer, {
-    ...initialState,
-    watchlist: loadPersistedData(STORAGE_KEYS.WATCHLIST),
-    droppedList: loadPersistedData(STORAGE_KEYS.DROPPED),
-  });
+  const [state, dispatch] = useReducer(
+    recommendationReducer,
+    initialState,
+    initRecommendationState
+  );
 
   const [toasts, setToasts] = useState<Toast[]>([]);
   const thinkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);

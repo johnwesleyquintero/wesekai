@@ -43,10 +43,10 @@ export const KEYWORD_SYNONYMS: Record<string, string[]> = {
 
 // Pre-compiled regex map for performance optimization
 const COMPILED_REGEX_MAP = new Map<string, RegExp>(
-  Object.entries(KEYWORD_SYNONYMS).map(([tag, synonyms]) => [
-    tag,
-    new RegExp(`\\b(${synonyms.join('|')})\\b`, 'gi'),
-  ])
+  Object.entries(KEYWORD_SYNONYMS).map(([tag, synonyms]) => {
+    const uniqueKeywords = Array.from(new Set([tag, ...synonyms]));
+    return [tag, new RegExp(`\\b(${uniqueKeywords.join('|')})\\b`, 'gi')];
+  })
 );
 
 /**

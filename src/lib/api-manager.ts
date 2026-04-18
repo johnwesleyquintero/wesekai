@@ -23,6 +23,7 @@ class ApiManager {
   private cache = new Map<string, CacheEntry<unknown>>();
   private lastRequestTimestamp = 0;
   private minDelayBetweenRequests = 400; // ~2.5 requests per second for safety
+  private persistTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.hydrate();
@@ -117,12 +118,15 @@ class ApiManager {
   }
 
   private persist() {
-    try {
-      const data = Object.fromEntries(this.cache.entries());
-      localStorage.setItem(PERSISTENT_CACHE_KEY, JSON.stringify(data));
-    } catch (e) {
-      console.warn('[API: PERSISTENCE] Failed to save cache:', e);
-    }
+    if (this.persistTimeout) clearTimeout(this.persistTimeout);
+    this.persistTimeout = setTimeout(() => {
+      try {
+        const data = Object.fromEntries(this.cache.entries());
+        localStorage.setItem(PERSISTENT_CACHE_KEY, JSON.stringify(data));
+      } catch (e) {
+        console.warn('[API: PERSISTENCE] Failed to save cache:', e);
+      }
+    }, 1000);
   }
 
   clearCache(): void {
