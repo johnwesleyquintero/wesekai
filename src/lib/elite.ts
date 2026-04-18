@@ -165,7 +165,11 @@ export const ELITE_MANHWA: UnifiedContent[] = [
 let lastRefreshTime = 0;
 const REFRESH_COOLDOWN = 1000 * 60 * 60; // 1 hour rate limit
 
-const extractIdFromUrl = (url: string) => url.match(/\/(?:anime|manga)\/(\d+)/)?.[1] || null;
+/**
+ * Safely extracts the numeric ID from MyAnimeList or AniList URLs.
+ * Matches the first numeric segment following /anime/ or /manga/.
+ */
+const extractIdFromUrl = (url: string) => url.match(/\/(?:anime|manga|bx)\/(\d+)/i)?.[1] || null;
 
 export async function refreshEliteImages(): Promise<void> {
   const now = Date.now();
@@ -188,9 +192,13 @@ export async function refreshEliteImages(): Promise<void> {
   });
 
   const results = await Promise.allSettled(malTasks);
-  const failed = results.filter(r => r.status === 'rejected');
-  if (failed.length) {
-    console.warn(`[DATA: SYNC] Failed to refresh ${failed.length} elite anime images.`);
+  const malErrors = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+
+  if (malErrors.length) {
+    console.warn(
+      `[DATA: SYNC] Failed to refresh ${malErrors.length} elite anime images.`,
+      malErrors.map(e => e.reason)
+    );
   }
 
   const manhwaTasks = ELITE_MANHWA.map(async manhwa => {
@@ -222,8 +230,14 @@ export async function refreshEliteImages(): Promise<void> {
   });
 
   const manhwaResults = await Promise.allSettled(manhwaTasks);
-  const manhwaFailed = manhwaResults.filter(r => r.status === 'rejected');
-  if (manhwaFailed.length) {
-    console.warn(`[DATA: SYNC] Failed to refresh ${manhwaFailed.length} elite manhwa images.`);
+  const manhwaErrors = manhwaResults.filter(
+    (r): r is PromiseRejectedResult => r.status === 'rejected'
+  );
+
+  if (manhwaErrors.length) {
+    console.warn(
+      `[DATA: SYNC] Failed to refresh ${manhwaErrors.length} elite manhwa images.`,
+      manhwaErrors.map(e => e.reason)
+    );
   }
 }

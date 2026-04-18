@@ -225,6 +225,7 @@ export const ResultCard: FC<{
               <button
                 onClick={handleDrop}
                 className="p-2.5 sm:p-3 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-all"
+                aria-label="Drop content and never show again"
                 title="Drop Anime (Never show again)"
               >
                 <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -232,6 +233,7 @@ export const ResultCard: FC<{
               <button
                 onClick={handleSkip}
                 className="p-2.5 sm:p-3 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-white hover:border-zinc-500 transition-all"
+                aria-label="Skip for now"
                 title="Skip for now"
               >
                 <FastForward className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -239,6 +241,7 @@ export const ResultCard: FC<{
               <button
                 onClick={handleWatch}
                 className="p-2.5 sm:p-3 rounded-full border bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/40 hover:text-white transition-all shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                aria-label="Save to Arsenal and show next"
                 title="Save to Arsenal & Next"
               >
                 <Bookmark className="w-4 h-4 sm:w-5 sm:h-5" />

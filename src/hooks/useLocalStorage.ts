@@ -25,20 +25,23 @@ export const migrateData = (data: unknown[]): Recommendation[] => {
   return data.filter(Boolean).map(item => {
     const raw = item as LegacyRecommendation;
 
-    // Check if it's already in the new format
+    // 1. Current schema check
     if (raw.contentData) {
       return item as Recommendation;
     }
 
-    // Migration logic for malData (older format)
+    // 2. Deep migration for legacy objects containing 'malData'
     if (raw.malData) {
+      const normalizedTags = Array.from(
+        new Set([...(raw.malData.tags || []), ...(raw.tags || [])])
+      );
       return {
         title: raw.title || raw.malData.title || 'Unknown',
-        tags: raw.malData.tags || raw.tags || [],
+        tags: normalizedTags,
         contentData: {
           ...raw.malData,
           type: 'anime',
-          tags: raw.malData.tags || raw.tags || [],
+          tags: normalizedTags,
         },
         wbScore: raw.wbScore || 0,
         wbReasons: raw.wbReasons || [],
@@ -46,7 +49,7 @@ export const migrateData = (data: unknown[]): Recommendation[] => {
       } as Recommendation;
     }
 
-    // Fallback for very basic objects
+    // 3. Last-resort fallback for partial matches
     return {
       title: raw.title || 'Unknown',
       tags: raw.tags || [],
