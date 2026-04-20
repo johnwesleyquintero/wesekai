@@ -74,29 +74,23 @@ export function useRecommendationEngine() {
     dispatch({ type: 'SET_ERROR', payload: null });
 
     try {
+      const isBanned = (tags: string[]) =>
+        tags.some(tag =>
+          WESEKAI_CONSTANTS.BANNED_GENRES.some(b => tag.toLowerCase() === b.toLowerCase())
+        );
+
+      const filterContent = (items: UnifiedContent[]) =>
+        items.filter(item => {
+          if (isBanned(item.tags)) return false;
+          if (activeFilter === 'All') return true;
+          return item.tags.some(tag => tag.toLowerCase() === activeFilter.toLowerCase());
+        });
+
       const filteredEliteAnime =
-        mediaType === 'all' || mediaType === 'anime'
-          ? ELITE_ANIME.filter(anime => {
-              const hasBannedGenre = anime.tags.some(tag =>
-                WESEKAI_CONSTANTS.BANNED_GENRES.some(b => tag.toLowerCase() === b.toLowerCase())
-              );
-              if (hasBannedGenre) return false;
-              if (activeFilter === 'All') return true;
-              return anime.tags.some(tag => tag.toLowerCase() === activeFilter.toLowerCase());
-            })
-          : [];
+        mediaType === 'all' || mediaType === 'anime' ? filterContent(ELITE_ANIME) : [];
 
       const filteredEliteManhwa =
-        mediaType === 'all' || mediaType === 'manhwa'
-          ? ELITE_MANHWA.filter(manhwa => {
-              const hasBannedGenre = manhwa.tags.some(tag =>
-                WESEKAI_CONSTANTS.BANNED_GENRES.some(b => tag.toLowerCase() === b.toLowerCase())
-              );
-              if (hasBannedGenre) return false;
-              if (activeFilter === 'All') return true;
-              return manhwa.tags.some(tag => tag.toLowerCase() === activeFilter.toLowerCase());
-            })
-          : [];
+        mediaType === 'all' || mediaType === 'manhwa' ? filterContent(ELITE_MANHWA) : [];
 
       const eliteRecs = [...filteredEliteAnime, ...filteredEliteManhwa].map(contentData => {
         const scoring = calculateWorldBuildingScore(contentData.tags);

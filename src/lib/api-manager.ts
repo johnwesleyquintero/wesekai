@@ -71,8 +71,10 @@ class ApiManager {
   private hydrate() {
     try {
       const saved = localStorage.getItem(PERSISTENT_CACHE_KEY);
-      if (saved) {
+      if (saved && saved.startsWith('{')) {
         const data = JSON.parse(saved);
+        if (typeof data !== 'object' || data === null) return;
+
         const now = Date.now();
         Object.entries(data).forEach(([key, value]) => {
           const entry = value as CacheEntry<unknown>;

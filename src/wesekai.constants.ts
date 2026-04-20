@@ -1,6 +1,6 @@
 export const WESEKAI_CONSTANTS = {
   // Names used for client-side filtering
-  BANNED_GENRES: ['Boys Love', 'Mecha', 'Card Game', 'Card Games', 'Kids', 'Family'],
+  BANNED_GENRES: ['Boys Love', 'Mecha', 'Card Game', 'Card Games', 'Kids', 'Family', 'Sports'],
   // MAL Genre/Theme IDs used for API-level exclusion
   // 28: Boys Love, 18: Mecha, 54: Combat Sports/Card, 15: Kids
   BANNED_GENRE_IDS: [28, 18, 54, 15],
@@ -9,6 +9,7 @@ export const WESEKAI_CONSTANTS = {
     'yu-gi-oh',
     'yugioh',
     'pokemon',
+    'digimon',
     'beyblade',
     'bakugan',
     'duel masters',

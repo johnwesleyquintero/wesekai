@@ -265,7 +265,7 @@ const IntelligenceResponse = ({ text }: { text: string }) => {
       setDisplayedText(text.slice(0, i));
       i++;
       if (i > text.length) clearInterval(timer);
-    }, 15);
+    }, 8); // Sharper, faster typewriter feel
     return () => clearInterval(timer);
   }, [text]);
 
@@ -313,7 +313,7 @@ const CardImage = memo(
         <img
           src={imageUrl}
           alt={title}
-          className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${
+          className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out ${
             loaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
           }`}
           loading="lazy"
