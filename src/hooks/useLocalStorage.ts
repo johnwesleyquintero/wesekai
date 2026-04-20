@@ -79,7 +79,7 @@ export function useLocalStorage<T>(key: string, initialValue: T, migrate = false
       const parsed = JSON.parse(saved);
       // Only attempt migration if we are in migrate mode and dealing with an array
       if (migrate && Array.isArray(parsed) && parsed.length > 0) {
-        return migrateData(parsed) as unknown as T;
+        return migrateData(parsed) as T;
       }
       return parsed;
     } catch (error) {

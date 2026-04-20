@@ -22,6 +22,7 @@ import { Recommendation } from '../types';
 import { getYouTubeSearchUrl, fetchYouTubeTrailerId } from '../lib/youtube';
 import { getWesleyAnalysis } from '../lib/ai';
 import { TrailerModal } from './TrailerModal';
+import { getWatchUrl } from '../lib/utils';
 
 const IMAGE_PLACEHOLDER_COLOR = 'var(--color-zinc-900)';
 
@@ -534,10 +535,7 @@ export const ResultCard: FC<{
   const externalLinks = useMemo(
     () => ({
       database: recommendation.contentData.url,
-      watch:
-        recommendation.contentData.type === 'manhwa'
-          ? `https://mangadex.org/titles?q=${encodeURIComponent(recommendation.contentData.title)}`
-          : `https://aniwatchtv.to/search?keyword=${encodeURIComponent(recommendation.contentData.title)}`,
+      watch: getWatchUrl(recommendation.contentData.type, recommendation.contentData.title),
     }),
     [
       recommendation.contentData.url,
