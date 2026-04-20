@@ -97,11 +97,11 @@ class ApiManager {
     );
     const waitTime = nextAvailableSlot - now;
 
-    this.lastRequestTimestamp = nextAvailableSlot;
-
     if (waitTime > 0) {
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
+
+    this.lastRequestTimestamp = Date.now();
   }
 
   async fetchWithRetry<T>(
