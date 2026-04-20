@@ -15,4 +15,15 @@ export const WESEKAI_CONSTANTS = {
     'vanguard',
     'shadowverse',
   ],
+  FILTERS: [
+    'All',
+    'Isekai',
+    'Fantasy',
+    'Action',
+    'Reincarnation',
+    'Military',
+    'Kingdom',
+    'Strategy',
+    'Comedy',
+  ],
 };

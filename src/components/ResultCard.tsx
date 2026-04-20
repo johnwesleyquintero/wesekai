@@ -16,11 +16,14 @@ import {
   Loader2,
   Cpu,
   Sparkles,
+  Volume2,
 } from 'lucide-react';
 import { Recommendation } from '../types';
 import { getYouTubeSearchUrl, fetchYouTubeTrailerId } from '../lib/youtube';
 import { getWesleyAnalysis } from '../lib/ai';
 import { TrailerModal } from './TrailerModal';
+
+const IMAGE_PLACEHOLDER_COLOR = '#18181b'; // zinc-900
 
 export const cardVariants: Variants = {
   initial: ({ confidence }: { confidence: number }) => {
@@ -120,30 +123,36 @@ const ActionButtons = memo(
     title: string;
   }) => (
     <div className="flex gap-2 sm:gap-3 shrink-0 self-end sm:self-auto sm:ml-4">
-      <button
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95, rotate: -5 }}
         onClick={onDrop}
         className="p-2.5 sm:p-3 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-all"
         aria-label="Drop content and never show again"
         title="Drop Anime (Never show again)"
       >
         <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
-      </button>
-      <button
+      </motion.button>
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95, x: -5 }}
         onClick={onSkip}
         className="p-2.5 sm:p-3 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-white hover:border-zinc-500 transition-all"
         aria-label={`Skip ${title} for now`}
         title="Skip for now"
       >
         <FastForward className="w-4 h-4 sm:w-5 sm:h-5" />
-      </button>
-      <button
+      </motion.button>
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95, y: -5 }}
         onClick={onWatch}
         className="p-2.5 sm:p-3 rounded-full border bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/40 hover:text-white transition-all shadow-[0_0_15px_rgba(99,102,241,0.2)]"
         aria-label={`Save ${title} to Arsenal and show next`}
         title="Save to Arsenal & Next"
       >
         <Bookmark className="w-4 h-4 sm:w-5 sm:h-5" />
-      </button>
+      </motion.button>
     </div>
   )
 );
@@ -424,17 +433,20 @@ export const ResultCard: FC<{
         {recommendation.isElite && <EliteBadge />}
 
         {/* Image Section */}
-        <div className="w-full md:w-2/5 relative aspect-[3/4] md:aspect-auto overflow-hidden">
+        <div
+          className="w-full md:w-2/5 relative aspect-[3/4] md:aspect-auto overflow-hidden"
+          style={{
+            backgroundColor: recommendation.contentData.placeholderColor || IMAGE_PLACEHOLDER_COLOR,
+          }}
+        >
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent md:bg-gradient-to-r md:from-transparent md:via-zinc-900/50 md:to-zinc-900 z-10" />
-          <motion.img
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.8 }}
+          <img
             src={recommendation.contentData.imageUrl}
             alt={recommendation.contentData.title}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 data-[loaded=true]:opacity-100"
             loading="lazy"
             decoding="async"
+            onLoad={e => e.currentTarget.setAttribute('data-loaded', 'true')}
           />
         </div>
 
@@ -482,6 +494,8 @@ export const ResultCard: FC<{
             <button
               onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
               className="mt-2 text-xs font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 md:hidden"
+              aria-expanded={isSynopsisExpanded}
+              aria-controls="synopsis-text"
             >
               {isSynopsisExpanded ? 'Show Less' : 'Read Full Synopsis'}
             </button>
@@ -510,6 +524,7 @@ export const ResultCard: FC<{
                   icon={Play}
                   className={`text-zinc-400 hover:text-red-400 ${isFetchingTrailer ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onClick={handleTrailerClick}
+                  aria-label="Watch trailer"
                 >
                   Trailer
                 </LinkItem>
@@ -520,8 +535,9 @@ export const ResultCard: FC<{
                   recommendation.contentData.title,
                   recommendation.contentData.type
                 )}
-                icon={Play}
+                icon={Volume2}
                 className="text-zinc-400 hover:text-red-400"
+                aria-label="Search for recap on YouTube"
               >
                 Recap
               </LinkItem>

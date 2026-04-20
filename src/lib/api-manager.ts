@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
@@ -18,15 +20,51 @@ export class ApiError extends Error {
 
 const DEFAULT_CACHE_TTL = 1000 * 60 * 30; // 30 minutes
 const PERSISTENT_CACHE_KEY = 'wesekai_api_cache';
+const RATE_LIMIT_COOLDOWN = 1000 * 60; // 1 minute cooldown for rate limiting
+
+type RateLimitListener = (isLimited: boolean) => void;
 
 class ApiManager {
   private cache = new Map<string, CacheEntry<unknown>>();
   private lastRequestTimestamp = 0;
   private minDelayBetweenRequests = 400; // ~2.5 requests per second for safety
   private persistTimeout: ReturnType<typeof setTimeout> | null = null;
+  private _isRateLimited = false;
+  private listeners = new Set<RateLimitListener>();
+  private rateLimitResetTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.hydrate();
+  }
+
+  public get isRateLimited(): boolean {
+    return this._isRateLimited;
+  }
+
+  private setRateLimited(value: boolean) {
+    this._isRateLimited = value;
+    this.notifyListeners();
+    if (value) {
+      this.rateLimitResetTimeout = setTimeout(() => {
+        this.setRateLimited(false);
+      }, RATE_LIMIT_COOLDOWN);
+    } else if (this.rateLimitResetTimeout) {
+      clearTimeout(this.rateLimitResetTimeout);
+      this.rateLimitResetTimeout = null;
+    }
+  }
+
+  private notifyListeners() {
+    this.listeners.forEach(listener => listener(this._isRateLimited));
+  }
+
+  public subscribe(listener: RateLimitListener) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  public getStatus() {
+    return this._isRateLimited;
   }
 
   private hydrate() {
@@ -69,11 +107,20 @@ class ApiManager {
         await this.throttle();
         const response = await fetch(url, options);
 
-        if (response.status === 429 || (response.status >= 500 && attempt < maxRetries - 1)) {
-          const waitTime = baseDelay * Math.pow(2, attempt);
-          const logPrefix = response.status === 429 ? '[SYSTEM: COOLDOWN]' : '[SYSTEM: RECOVERY]';
+        if (response.status === 429) {
+          this.setRateLimited(true);
+          const waitTime = baseDelay * Math.pow(2, attempt) + RATE_LIMIT_COOLDOWN;
           console.warn(
-            `${logPrefix} Status ${response.status}. Initiating temporal delay: ${waitTime}ms...`
+            `[SYSTEM: COOLDOWN] Status 429. Initiating temporal delay: ${waitTime}ms...`
+          );
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+
+        if (response.status >= 500 && attempt < maxRetries - 1) {
+          const waitTime = baseDelay * Math.pow(2, attempt);
+          console.warn(
+            `[SYSTEM: RECOVERY] Status ${response.status}. Initiating temporal delay: ${waitTime}ms...`
           );
           await new Promise(resolve => setTimeout(resolve, waitTime));
           continue;
@@ -81,7 +128,7 @@ class ApiManager {
 
         if (!response.ok) {
           throw new ApiError(
-            response.status === 429 ? 'RATE_LIMIT' : response.status >= 500 ? 'SERVER' : 'UNKNOWN',
+            response.status >= 500 ? 'SERVER' : 'UNKNOWN',
             `HTTP error! status: ${response.status}`,
             response.status
           );
@@ -136,3 +183,18 @@ class ApiManager {
 }
 
 export const apiManager = new ApiManager();
+
+export function useApiManager() {
+  const [isRateLimited, setIsRateLimited] = useState(apiManager.isRateLimited);
+
+  useEffect(() => {
+    const unsubscribe = apiManager.subscribe(status => {
+      setIsRateLimited(status);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  return { isRateLimited };
+}

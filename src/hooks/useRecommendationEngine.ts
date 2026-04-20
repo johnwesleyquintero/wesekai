@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useCallback, useState, useRef } from 'react';
+import { useReducer, useEffect, useCallback, useRef } from 'react';
 import { fetchTopAnimeList } from '../lib/mal';
 import { fetchTopManhwa } from '../lib/anilist';
 import { calculateWorldBuildingScore, findBestRecommendation } from '../lib/scoring';
@@ -7,17 +7,12 @@ import { WESEKAI_CONSTANTS } from '../wesekai.constants';
 import { Recommendation, UnifiedContent } from '../types';
 import { recommendationReducer, initialState, State } from './useRecommendationReducer';
 import { migrateData } from './useLocalStorage';
+import { useToast } from './useToast';
 
 const STORAGE_KEYS = {
   WATCHLIST: 'wesekai-arsenal',
   DROPPED: 'wesekai-dropped',
 };
-
-export interface Toast {
-  id: string;
-  message: string;
-  type: 'success' | 'info' | 'error';
-}
 
 const loadPersistedData = (key: string): Recommendation[] => {
   try {
@@ -41,16 +36,12 @@ export function useRecommendationEngine() {
     initRecommendationState
   );
 
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const { toasts, addToast } = useToast();
   const thinkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const toastTimeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
 
   useEffect(() => {
-    const toastTimeouts = toastTimeoutsRef.current;
-
     return () => {
       if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
-      toastTimeouts.forEach(clearTimeout);
     };
   }, []);
 
@@ -68,16 +59,6 @@ export function useRecommendationEngine() {
     tagPreferences,
     isThinking,
   } = state;
-
-  const addToast = useCallback((message: string, type: Toast['type'] = 'success') => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts(prev => [...prev, { id, message, type }]);
-    const timeout = setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-      toastTimeoutsRef.current.delete(timeout);
-    }, 3000);
-    toastTimeoutsRef.current.add(timeout);
-  }, []);
 
   // Persistence
   useEffect(() => {

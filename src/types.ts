@@ -2,6 +2,7 @@ export interface UnifiedContent {
   type: 'anime' | 'manhwa';
   title: string;
   imageUrl: string;
+  placeholderColor?: string; // New field for progressive image loading
   score: number;
   synopsis: string;
   url: string;

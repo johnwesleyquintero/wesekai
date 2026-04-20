@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle, Info, XCircle } from 'lucide-react';
-import { Toast as ToastType } from '../hooks/useRecommendationEngine';
+import { Toast as ToastType } from '../hooks/useToast';
 
 export function ToastContainer({ toasts }: { toasts: ToastType[] }) {
   return (
