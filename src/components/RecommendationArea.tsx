@@ -32,7 +32,7 @@ const IntelligenceLoader = () => {
   const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => setMessageIndex(i => (i + 1) % messages.length), 2000);
+    const interval = setInterval(() => setMessageIndex(i => (i + 1) % messages.length), 2500);
     return () => clearInterval(interval);
   }, []);
 

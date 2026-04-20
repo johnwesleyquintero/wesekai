@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { JikanRateLimitError } from '../lib/errors';
 
 interface Props {
   children: ReactNode;
@@ -21,12 +22,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
   // This method is called after an error has been thrown by a descendant component.
   // It receives the error that was thrown as a parameter.
   static getDerivedStateFromError(error: Error): State {
-    // Attempt to detect Jikan API rate limit errors based on message content.
-    // This is a heuristic and might need refinement based on actual error structures from api-manager.
-    const isJikanRateLimit =
-      error.message.includes('Jikan') &&
-      (error.message.includes('rate limit') || error.message.includes('429'));
-    return { hasError: true, error, isJikanRateLimitError: isJikanRateLimit };
+    return {
+      hasError: true,
+      error,
+      isJikanRateLimitError: error instanceof JikanRateLimitError,
+    };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {

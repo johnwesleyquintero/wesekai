@@ -261,10 +261,10 @@ const IntelligenceResponse = ({ text }: { text: string }) => {
   const [displayedText, setDisplayedText] = useState('');
 
   useEffect(() => {
+    setDisplayedText('');
     let i = 0;
     const timer = setInterval(() => {
-      setDisplayedText(text.slice(0, i));
-      i++;
+      setDisplayedText(text.slice(0, ++i));
       if (i > text.length) clearInterval(timer);
     }, 8); // Sharper, faster typewriter feel
     return () => clearInterval(timer);

@@ -62,12 +62,17 @@ export function useRecommendationEngine() {
 
   // Persistence
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.WATCHLIST, JSON.stringify(watchlist));
-  }, [watchlist]);
+    const handler = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEYS.WATCHLIST, JSON.stringify(watchlist));
+        localStorage.setItem(STORAGE_KEYS.DROPPED, JSON.stringify(droppedList));
+      } catch (error) {
+        console.error('Failed to sync state to localStorage:', error);
+      }
+    }, 500);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.DROPPED, JSON.stringify(droppedList));
-  }, [droppedList]);
+    return () => clearTimeout(handler);
+  }, [watchlist, droppedList]);
 
   const fetchRecommendations = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Recommendation } from '../types';
 import { getYouTubeSearchUrl } from '../lib/youtube';
+import { getWatchUrl } from '../lib/utils';
 
 export function AnimeListModal({
   type,
@@ -356,11 +357,7 @@ export function AnimeListModal({
                           <Play className="w-4 h-4" /> Recap
                         </a>
                         <a
-                          href={
-                            rec.contentData.type === 'manhwa'
-                              ? `https://mangadex.org/titles?q=${encodeURIComponent(rec.contentData.title)}`
-                              : `https://aniwatchtv.to/search?keyword=${encodeURIComponent(rec.contentData.title)}`
-                          }
+                          href={getWatchUrl(rec.contentData.type, rec.contentData.title)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`text-xs font-medium ${themeColor} ${linkHover} flex items-center gap-1`}
