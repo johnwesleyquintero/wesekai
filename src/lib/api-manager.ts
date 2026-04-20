@@ -101,7 +101,7 @@ class ApiManager {
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
 
-    this.lastRequestTimestamp = Date.now();
+    this.lastRequestTimestamp = nextAvailableSlot;
   }
 
   async fetchWithRetry<T>(
@@ -111,18 +111,20 @@ class ApiManager {
     baseDelay = 1000
   ): Promise<T> {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+      
       try {
         await this.throttle();
+        const controller = new AbortController();
+        timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
         const response = await fetch(url, {
           ...options,
           signal: controller.signal,
         });
-        clearTimeout(timeoutId);
 
         if (response.status === 429) {
+          if (timeoutId) clearTimeout(timeoutId);
           this.setRateLimited(true);
           const waitTime = baseDelay * Math.pow(2, attempt) + RATE_LIMIT_COOLDOWN;
           console.warn(
@@ -133,6 +135,7 @@ class ApiManager {
         }
 
         if (response.status >= 500 && attempt < maxRetries - 1) {
+          if (timeoutId) clearTimeout(timeoutId);
           const waitTime = baseDelay * Math.pow(2, attempt);
           console.warn(
             `[SYSTEM: RECOVERY] Status ${response.status}. Initiating temporal delay: ${waitTime}ms...`
@@ -142,6 +145,7 @@ class ApiManager {
         }
 
         if (!response.ok) {
+          if (timeoutId) clearTimeout(timeoutId);
           throw new ApiError(
             response.status >= 500 ? 'SERVER' : 'UNKNOWN',
             `HTTP error! status: ${response.status}`,
@@ -149,9 +153,10 @@ class ApiManager {
           );
         }
 
+        if (timeoutId) clearTimeout(timeoutId);
         return await response.json();
       } catch (err) {
-        clearTimeout(timeoutId);
+        if (timeoutId) clearTimeout(timeoutId);
 
         if (err instanceof Error && err.name === 'AbortError') {
           console.error(`[SYSTEM: TIMEOUT] Request to ${url} exceeded temporal threshold.`);
