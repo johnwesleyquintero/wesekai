@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { motion } from 'motion/react';
 
 interface LogoProps {
@@ -7,6 +8,11 @@ interface LogoProps {
 }
 
 export function Logo({ size = 40, showBackground = true, className = '' }: LogoProps) {
+  const id = useId();
+  const bgId = `logo-bg-${id}`;
+  const accentId = `logo-accent-${id}`;
+  const glowId = `logo-glow-${id}`;
+
   return (
     <motion.div
       initial={{ scale: 0.9, opacity: 0 }}
@@ -17,19 +23,19 @@ export function Logo({ size = 40, showBackground = true, className = '' }: LogoP
       <svg viewBox="0 0 100 100" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
         <defs>
           {/* Background Gradient */}
-          <linearGradient id="logo-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={bgId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="var(--color-indigo-600)" />
             <stop offset="100%" stopColor="var(--color-indigo-950)" />
           </linearGradient>
 
           {/* Accent Gradient */}
-          <linearGradient id="logo-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={accentId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="var(--color-indigo-400)" />
             <stop offset="100%" stopColor="var(--color-purple-400)" />
           </linearGradient>
 
           {/* Glow */}
-          <filter id="logo-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation="2.5" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
@@ -40,7 +46,13 @@ export function Logo({ size = 40, showBackground = true, className = '' }: LogoP
 
         {/* Background */}
         {showBackground && (
-          <rect width="100" height="100" rx="28" fill="url(#logo-bg)" className="drop-shadow-2xl" />
+          <rect
+            width="100"
+            height="100"
+            rx="28"
+            fill={`url(#${bgId})`}
+            className="drop-shadow-2xl"
+          />
         )}
 
         {/* Stars */}
@@ -49,13 +61,13 @@ export function Logo({ size = 40, showBackground = true, className = '' }: LogoP
         <circle cx="20" cy="80" r="0.6" fill="#fff" opacity="0.2" />
         <circle cx="78" cy="78" r="0.6" fill="#fff" opacity="0.4" />
 
-        <g filter="url(#logo-glow)">
+        <g filter={`url(#${glowId})`}>
           {/* Portal Ring */}
           <motion.circle
             cx="50"
             cy="50"
             r="26"
-            stroke="url(#logo-accent)"
+            stroke={`url(#${accentId})`}
             strokeWidth="3"
             fill="none"
             opacity="0.8"

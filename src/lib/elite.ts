@@ -164,6 +164,16 @@ export const ELITE_MANHWA: UnifiedContent[] = [
   },
 ];
 
+const ANILIST_MANHWA_QUERY = `
+  query ($id: Int) {
+    Media(id: $id, type: MANGA) {
+      coverImage {
+        large
+      }
+    }
+  }
+`;
+
 const REFRESH_COOLDOWN = 1000 * 60 * 60; // 1 hour cooldown for image refreshes
 let lastRefreshTime = 0; // This state should probably be managed by a hook or a more persistent store if the app is long-lived
 
@@ -199,22 +209,12 @@ export async function refreshEliteImages(): Promise<void> {
     const id = extractIdFromUrl(manhwa.url);
     if (!id) return;
 
-    const query = `
-      query ($id: Int) {
-        Media(id: $id, type: MANGA) {
-          coverImage {
-            large
-          }
-        }
-      }
-    `;
-
     const data = await apiManager.fetchWithRetry<{
       data: { Media: { coverImage: { large: string } } };
     }>('https://graphql.anilist.co', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { id: Number(id) } }),
+      body: JSON.stringify({ query: ANILIST_MANHWA_QUERY, variables: { id: Number(id) } }),
     });
 
     const newUrl = data.data?.Media?.coverImage?.large;

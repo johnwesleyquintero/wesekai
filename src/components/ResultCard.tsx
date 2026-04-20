@@ -272,9 +272,10 @@ const IntelligenceResponse = ({ text }: { text: string }) => {
   useEffect(() => {
     setDisplayedText('');
     let i = 0;
+    const fullText = text;
     const timer = setInterval(() => {
-      setDisplayedText(text.slice(0, ++i));
-      if (i > text.length) clearInterval(timer);
+      setDisplayedText(fullText.slice(0, ++i));
+      if (i >= fullText.length) clearInterval(timer);
     }, 8); // Sharper, faster typewriter feel
     return () => clearInterval(timer);
   }, [text]);
@@ -623,6 +624,7 @@ export const ResultCard: FC<{
             </p>
             <button
               onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
+              type="button"
               className="mt-2 text-xs font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 rounded"
               aria-expanded={isSynopsisExpanded}
               aria-controls="synopsis-text"

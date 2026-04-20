@@ -80,7 +80,7 @@ export function preProcessText(text: string): string {
   return text
     .trim()
     .toLowerCase()
-    .replace(/[.,/#!$%^&*;:{}=_`~()-]/g, '') // Remove punctuation
+    .replace(/[.,/#!$%^&*;:{}=_`~()[\]"'<>?|\\+]/g, '') // Comprehensive punctuation removal
     .replace(/\s+/g, ' '); // Normalize whitespace
 }
 

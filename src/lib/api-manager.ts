@@ -91,12 +91,17 @@ class ApiManager {
 
   private async throttle() {
     const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTimestamp;
-    if (timeSinceLastRequest < this.minDelayBetweenRequests) {
-      const waitTime = this.minDelayBetweenRequests - timeSinceLastRequest;
+    const nextAvailableSlot = Math.max(
+      now,
+      this.lastRequestTimestamp + this.minDelayBetweenRequests
+    );
+    const waitTime = nextAvailableSlot - now;
+
+    this.lastRequestTimestamp = nextAvailableSlot;
+
+    if (waitTime > 0) {
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
-    this.lastRequestTimestamp = Date.now();
   }
 
   async fetchWithRetry<T>(
