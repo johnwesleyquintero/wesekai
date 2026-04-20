@@ -84,9 +84,18 @@ export const cardVariants: Variants = {
 };
 
 const EliteBadge = memo(() => (
-  <div className="absolute top-4 -right-12 bg-gradient-to-r from-yellow-500 to-amber-600 text-white text-[10px] font-bold px-12 py-1.5 shadow-lg flex items-center gap-1.5 z-50 rotate-45 uppercase tracking-widest">
+  <motion.div
+    initial={{ x: 20, opacity: 0 }}
+    animate={{ x: 0, opacity: 1 }}
+    className="absolute top-4 -right-12 bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-600 text-white text-[10px] font-bold px-12 py-1.5 shadow-lg flex items-center gap-1.5 z-50 rotate-45 uppercase tracking-widest overflow-hidden"
+  >
+    <motion.div
+      animate={{ x: ['-100%', '200%'] }}
+      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', repeatDelay: 3 }}
+      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12"
+    />
     <Crown className="w-3 h-3" /> Wesley Approved
-  </div>
+  </motion.div>
 ));
 EliteBadge.displayName = 'EliteBadge';
 
@@ -129,8 +138,8 @@ const ActionButtons = memo(
         whileTap={{ scale: 0.95, rotate: -5 }}
         onClick={onDrop}
         className="p-2.5 sm:p-3 rounded-full border bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-all"
-        aria-label="Drop content and never show again"
-        title="Drop Anime (Never show again)"
+        aria-label="Drop this content and never show again"
+        title="Drop Content (Never show again)"
       >
         <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
       </motion.button>
@@ -282,7 +291,7 @@ const IntelligenceResponse = ({ text }: { text: string }) => {
         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/70">
           Intelligence Layer Response
         </span>
-        <p className="text-zinc-300 text-sm italic leading-relaxed font-medium">
+        <p key={text} className="text-zinc-300 text-sm italic leading-relaxed font-medium">
           &quot;{displayedText}&quot;
           <span className="inline-block w-1 h-4 ml-1 bg-indigo-500/50 animate-pulse" />
         </p>

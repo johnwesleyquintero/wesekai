@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Copy, Check } from 'lucide-react';
 import { JikanRateLimitError } from '../lib/errors';
 
 interface Props {
@@ -11,12 +11,13 @@ interface State {
   hasError: boolean;
   error: Error | null;
   isJikanRateLimitError: boolean; // New state to identify Jikan rate limit errors
+  copied: boolean;
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null, isJikanRateLimitError: false };
+    this.state = { hasError: false, error: null, isJikanRateLimitError: false, copied: false };
   }
 
   // This method is called after an error has been thrown by a descendant component.
@@ -26,6 +27,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
       hasError: true,
       error,
       isJikanRateLimitError: error instanceof JikanRateLimitError,
+      copied: false,
     };
   }
 
@@ -41,6 +43,15 @@ export class ErrorBoundary extends React.Component<Props, State> {
           if (this.state.hasError) window.location.reload();
         }, 100);
       });
+    }
+  };
+
+  handleCopyError = () => {
+    if (this.state.error) {
+      const errorDetails = `${this.state.error.name}: ${this.state.error.message}\n\nStack Trace:\n${this.state.error.stack}`;
+      navigator.clipboard.writeText(errorDetails);
+      this.setState({ copied: true });
+      setTimeout(() => this.setState({ copied: false }), 2000);
     }
   };
 
@@ -78,13 +89,26 @@ export class ErrorBoundary extends React.Component<Props, State> {
               An unexpected error occurred in the intelligence layer. We&apos;ve been notified and
               are looking into it.
             </p>
-            <button
-              onClick={this.handleReset}
-              className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors"
-            >
-              <RefreshCw className="w-5 h-5" />
-              Reload Application
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={this.handleReset}
+                className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors"
+              >
+                <RefreshCw className="w-5 h-5" />
+                Reload Application
+              </button>
+              <button
+                onClick={this.handleCopyError}
+                className="flex items-center gap-2 px-6 py-3 bg-zinc-800 text-zinc-300 rounded-xl font-bold hover:bg-zinc-700 transition-colors border border-zinc-700"
+              >
+                {this.state.copied ? (
+                  <Check className="w-5 h-5 text-emerald-400" />
+                ) : (
+                  <Copy className="w-5 h-5" />
+                )}
+                {this.state.copied ? 'Copied!' : 'Copy Technical Details'}
+              </button>
+            </div>
           </div>
         );
       }

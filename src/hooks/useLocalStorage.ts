@@ -55,7 +55,9 @@ export const migrateData = (data: unknown[]): Recommendation[] => {
       title: raw.title || 'Unknown',
       tags: raw.tags || [],
       contentData: {
-        url: raw.url || `legacy-${Date.now()}-${raw.title || 'unknown'}`,
+        url:
+          raw.url ||
+          `legacy-${raw.title?.toLowerCase().replace(/\s+/g, '-') || Math.random().toString(36).substring(7)}`,
         title: raw.title || 'Unknown',
         type: 'anime',
         imageUrl: '',
@@ -99,7 +101,7 @@ export function useLocalStorage<T>(key: string, initialValue: T, migrate = false
         }
         console.error(`Error saving localStorage key "${key}":`, error);
       }
-    }, 500); // 500ms debounce to prevent I/O jank
+    }, 300); // Optimized debounce to balance performance and persistence
 
     return () => clearTimeout(handler);
   }, [key, value]);

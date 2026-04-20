@@ -164,15 +164,15 @@ export const ELITE_MANHWA: UnifiedContent[] = [
   },
 ];
 
+const REFRESH_COOLDOWN = 1000 * 60 * 60; // 1 hour cooldown for image refreshes
 let lastRefreshTime = 0; // This state should probably be managed by a hook or a more persistent store if the app is long-lived
-const REFRESH_COOLDOWN = 1000 * 60 * 60; // TODO: Move to WESEKAI_CONSTANTS or environment variable
 
 /**
  * Safely extracts the numeric ID from MyAnimeList or AniList URLs.
  * Matches the first numeric segment following /anime/ or /manga/.
  */
 const extractIdFromUrl = (url: string) =>
-  url.trim().match(/\/(?:anime|manga)\/(\d+)(?:\/|\?|#|$)/i)?.[1] || null;
+  url.trim().match(/\/(?:anime|manga)\/(\d+)/i)?.[1] || null;
 
 export async function refreshEliteImages(): Promise<void> {
   const now = Date.now();
