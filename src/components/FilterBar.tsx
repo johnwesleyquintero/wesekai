@@ -56,6 +56,7 @@ export function FilterBar({ filters, activeFilter, setActiveFilter }: FilterBarP
             key={filter}
             ref={activeFilter === filter ? activeFilterRef : null}
             onClick={() => setActiveFilter(filter)}
+            aria-label={`Apply ${filter} filter`}
             className={`px-5 py-2 rounded-full text-[10px] sm:text-sm font-semibold uppercase tracking-wider transition-all whitespace-nowrap ${
               activeFilter === filter
                 ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400'

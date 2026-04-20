@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { Activity, Ban, Library } from 'lucide-react';
+import { getLevelInfo } from '../lib/level-utils';
 
 interface MobileNavProps {
   setModalView: (view: 'none' | 'arsenal' | 'dropped' | 'telemetry') => void;
@@ -8,6 +9,8 @@ interface MobileNavProps {
 }
 
 export function MobileNav({ setModalView, droppedCount, watchlistCount }: MobileNavProps) {
+  const levelInfo = getLevelInfo(watchlistCount);
+
   return (
     <motion.div
       initial={{ y: 100 }}
@@ -41,12 +44,14 @@ export function MobileNav({ setModalView, droppedCount, watchlistCount }: Mobile
         <button
           onClick={() => setModalView('arsenal')}
           aria-label="View arsenal"
-          className="relative flex flex-col items-center gap-1 p-3 text-indigo-400 hover:text-white transition-colors"
+          className={`relative flex flex-col items-center gap-1 p-3 ${levelInfo.color} hover:text-white transition-colors`}
         >
           <Library className="w-5 h-5" />
           <span className="text-[10px] font-bold uppercase tracking-tighter">Arsenal</span>
           {watchlistCount > 0 && (
-            <span className="absolute top-2 right-2 bg-indigo-500 text-white text-[8px] font-black px-1 rounded-full min-w-[1rem] h-4 flex items-center justify-center shadow-lg">
+            <span
+              className={`absolute top-2 right-2 ${levelInfo.color.replace('text', 'bg')} text-white text-[8px] font-black px-1 rounded-full min-w-[1rem] h-4 flex items-center justify-center shadow-lg`}
+            >
               {watchlistCount}
             </span>
           )}

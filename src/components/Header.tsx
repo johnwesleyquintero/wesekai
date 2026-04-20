@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import { Activity, Ban, Library, Shield } from 'lucide-react';
 import { Logo } from './Logo';
-import { WESEKAI_CONSTANTS } from '../wesekai.constants';
+import { getLevelInfo } from '../lib/level-utils';
 
 interface HeaderProps {
   mediaType: 'all' | 'anime' | 'manhwa';
@@ -10,18 +10,6 @@ interface HeaderProps {
   droppedCount: number;
   watchlistCount: number;
 }
-
-const getLevelInfo = (count: number) => {
-  const config = [...WESEKAI_CONSTANTS.LEVEL_CONFIG].reverse();
-  const level = config.find(l => count >= l.min) || WESEKAI_CONSTANTS.LEVEL_CONFIG[0];
-  const levelNumber = WESEKAI_CONSTANTS.LEVEL_CONFIG.indexOf(level) + 1;
-
-  return {
-    level: levelNumber,
-    title: level.title,
-    color: level.color,
-  };
-};
 
 export function Header({
   mediaType,
@@ -52,7 +40,12 @@ export function Header({
         {/* Action Buttons & Status - Hidden on mobile, moved to MobileNav */}
         <div className="hidden sm:flex flex-wrap justify-center items-center gap-3">
           {/* Arsenal Level Badge */}
-          <div className="flex items-center gap-3 px-4 py-2 bg-zinc-900/60 border border-zinc-800/50 rounded-2xl backdrop-blur-md">
+          <motion.div
+            key={levelInfo.level}
+            initial={{ scale: 1 }}
+            animate={{ scale: [1, 1.05, 1] }}
+            className="flex items-center gap-3 px-4 py-2 bg-zinc-900/60 border border-zinc-800/50 rounded-2xl backdrop-blur-md"
+          >
             <Shield className={`w-4 h-4 ${levelInfo.color} animate-pulse`} />
             <div className="flex flex-col">
               <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 leading-none">
@@ -64,13 +57,14 @@ export function Header({
                 LVL {levelInfo.level} - {levelInfo.title}
               </span>
             </div>
-          </div>
+          </motion.div>
 
           <div className="h-8 w-px bg-zinc-800/50 mx-1" />
 
           <button
             onClick={() => setModalView('telemetry')}
             className="group flex items-center gap-2 px-4 py-2 bg-zinc-900/40 border border-zinc-800/50 rounded-xl text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all backdrop-blur-sm"
+            aria-label="Open System Telemetry"
           >
             <Activity className="w-4 h-4 text-emerald-500/70 group-hover:text-emerald-400 transition-colors" />
             <span className="font-bold text-xs uppercase tracking-tight">Telemetry</span>
@@ -79,6 +73,7 @@ export function Header({
           <button
             onClick={() => setModalView('dropped')}
             className="group flex items-center gap-2 px-4 py-2 bg-zinc-900/40 border border-zinc-800/50 rounded-xl text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all backdrop-blur-sm"
+            aria-label={`View Dropped list (${droppedCount} items)`}
           >
             <Ban className="w-4 h-4 text-red-500/70 group-hover:text-red-400 transition-colors" />
             <span className="font-bold text-xs uppercase tracking-tight">Dropped</span>
@@ -90,6 +85,7 @@ export function Header({
           <button
             onClick={() => setModalView('arsenal')}
             className="group flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-300 hover:text-white hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all backdrop-blur-sm"
+            aria-label={`View your Arsenal (${watchlistCount} items)`}
           >
             <Library className="w-4 h-4 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
             <span className="font-bold text-xs uppercase tracking-tight">Arsenal</span>

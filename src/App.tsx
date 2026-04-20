@@ -1,8 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { ToastContainer } from './components/Toast';
-import { TelemetryModal } from './components/TelemetryModal';
-import { AnimeListModal } from './components/AnimeListModal';
 import { Header } from './components/Header';
 import { FilterBar } from './components/FilterBar';
 import { ErrorState } from './components/ErrorState';
@@ -12,6 +10,14 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { MobileNav } from './components/MobileNav';
 import { refreshEliteImages } from './lib/elite';
 import { WESEKAI_CONSTANTS } from './wesekai.constants';
+
+// Lazy load modal components for better initial performance
+const TelemetryModal = lazy(() =>
+  import('./components/TelemetryModal').then(module => ({ default: module.TelemetryModal }))
+);
+const AnimeListModal = lazy(() =>
+  import('./components/AnimeListModal').then(module => ({ default: module.AnimeListModal }))
+);
 
 export default function App() {
   const {
@@ -48,7 +54,13 @@ export default function App() {
   }, []);
 
   return (
-    <ErrorBoundary>
+    <ErrorBoundary
+      onJikanRateLimitRetry={() =>
+        (fetchRecommendations as (opts?: { useEliteFallback: boolean }) => void)({
+          useEliteFallback: true,
+        })
+      }
+    >
       <div className="min-h-screen text-zinc-50 font-sans selection:bg-indigo-500/30 relative overflow-hidden">
         {/* Ambient Background Glow */}
         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none" />
@@ -90,42 +102,44 @@ export default function App() {
 
         {/* Modals */}
         <AnimatePresence>
-          {modalView === 'telemetry' && (
-            <TelemetryModal
-              tagPreferences={tagPreferences}
-              sessionMemory={sessionMemory}
-              onClose={() => setModalView('none')}
-            />
-          )}
-          {(modalView === 'arsenal' || modalView === 'dropped') && (
-            <AnimeListModal
-              type={modalView}
-              watchlist={modalView === 'arsenal' ? watchlist : droppedList}
-              onClose={() => setModalView('none')}
-              onRemove={rec => {
-                const urls = [rec.contentData.url];
-                if (modalView === 'arsenal') {
-                  handleBulkRemoveFromWatchlist(urls);
-                } else {
-                  handleBulkRemoveFromDropped(urls);
-                }
-              }}
-              onBulkRemove={urls => {
-                if (modalView === 'arsenal') {
-                  handleBulkRemoveFromWatchlist(urls);
-                } else {
-                  handleBulkRemoveFromDropped(urls);
-                }
-              }}
-              onClearAll={() => {
-                if (modalView === 'arsenal') {
-                  handleClearWatchlist();
-                } else {
-                  handleClearDropped();
-                }
-              }}
-            />
-          )}
+          <Suspense fallback={null}>
+            {modalView === 'telemetry' && (
+              <TelemetryModal
+                tagPreferences={tagPreferences}
+                sessionMemory={sessionMemory}
+                onClose={() => setModalView('none')}
+              />
+            )}
+            {(modalView === 'arsenal' || modalView === 'dropped') && (
+              <AnimeListModal
+                type={modalView}
+                watchlist={modalView === 'arsenal' ? watchlist : droppedList}
+                onClose={() => setModalView('none')}
+                onRemove={rec => {
+                  const urls = [rec.contentData.url];
+                  if (modalView === 'arsenal') {
+                    handleBulkRemoveFromWatchlist(urls);
+                  } else {
+                    handleBulkRemoveFromDropped(urls);
+                  }
+                }}
+                onBulkRemove={urls => {
+                  if (modalView === 'arsenal') {
+                    handleBulkRemoveFromWatchlist(urls);
+                  } else {
+                    handleBulkRemoveFromDropped(urls);
+                  }
+                }}
+                onClearAll={() => {
+                  if (modalView === 'arsenal') {
+                    handleClearWatchlist();
+                  } else {
+                    handleClearDropped();
+                  }
+                }}
+              />
+            )}
+          </Suspense>
         </AnimatePresence>
         <ToastContainer toasts={toasts} />
       </div>

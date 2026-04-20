@@ -310,6 +310,13 @@ const CardImage = memo(
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent md:bg-gradient-to-r md:from-transparent md:via-zinc-900/50 md:to-zinc-900 z-10" />
+        {!loaded && (
+          <motion.div
+            animate={{ x: ['-100%', '100%'] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent z-[5] w-full pointer-events-none"
+          />
+        )}
         <img
           src={imageUrl}
           alt={title}
@@ -602,14 +609,14 @@ export const ResultCard: FC<{
           <div className="prose prose-invert prose-zinc max-w-none mb-8 sm:mb-10">
             <p
               className={`text-zinc-400 leading-relaxed text-sm sm:text-base md:text-lg font-light transition-all duration-300 ${
-                isSynopsisExpanded ? '' : 'line-clamp-6'
-              } md:line-clamp-none`}
+                isSynopsisExpanded ? '' : 'line-clamp-6 md:line-clamp-4'
+              }`}
             >
               {recommendation.contentData.synopsis}
             </p>
             <button
               onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
-              className="mt-2 text-xs font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 md:hidden"
+              className="mt-2 text-xs font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 rounded"
               aria-expanded={isSynopsisExpanded}
               aria-controls="synopsis-text"
             >
