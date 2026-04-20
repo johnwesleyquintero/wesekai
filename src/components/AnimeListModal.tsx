@@ -17,6 +17,7 @@ import {
 import { Recommendation } from '../types';
 import { getYouTubeSearchUrl } from '../lib/youtube';
 import { getWatchUrl } from '../lib/utils';
+import { ConfirmationModal } from './ConfirmationModal';
 
 export function AnimeListModal({
   type,
@@ -117,99 +118,29 @@ export function AnimeListModal({
         exit={{ scale: 0.95, y: 20 }}
         className="w-full max-w-4xl max-h-[85vh] bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden relative"
       >
-        {/* Confirmation Overlay for Clear All */}
-        <AnimatePresence>
-          {showConfirmClear && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-[110] flex items-center justify-center p-6 bg-zinc-950/90 backdrop-blur-md"
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="max-w-md w-full bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-2xl text-center"
-              >
-                <div className="w-16 h-16 bg-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Trash2 className="w-8 h-8 text-red-400" />
-                </div>
-                <h3 className="text-xl font-display font-bold text-white mb-2">
-                  Clear entire list?
-                </h3>
-                <p className="text-zinc-400 text-sm mb-8">
-                  This will permanently remove all items from your{' '}
-                  {isArsenal ? 'Arsenal' : 'Dropped list'}. This action cannot be undone.
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowConfirmClear(false)}
-                    className="flex-1 py-3 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors font-bold text-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      onClearAll();
-                      setShowConfirmClear(false);
-                    }}
-                    className="flex-1 py-3 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-all font-bold text-sm shadow-[0_0_20px_rgba(239,68,68,0.3)]"
-                  >
-                    Yes, Clear All
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <ConfirmationModal
+          isOpen={showConfirmClear}
+          onClose={() => setShowConfirmClear(false)}
+          onConfirm={() => {
+            onClearAll();
+            setShowConfirmClear(false);
+          }}
+          title="Clear entire list?"
+          message={`This will permanently remove all items from your ${isArsenal ? 'Arsenal' : 'Dropped list'}. This action cannot be undone.`}
+          confirmText="Yes, Clear All"
+        />
 
-        {/* Confirmation Overlay for Bulk Delete Selected */}
-        <AnimatePresence>
-          {showConfirmBulk && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-[110] flex items-center justify-center p-6 bg-zinc-950/90 backdrop-blur-md"
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="max-w-md w-full bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-2xl text-center"
-              >
-                <div className="w-16 h-16 bg-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Trash2 className="w-8 h-8 text-red-400" />
-                </div>
-                <h3 className="text-xl font-display font-bold text-white mb-2">
-                  Delete {selectedUrls.size} items?
-                </h3>
-                <p className="text-zinc-400 text-sm mb-8">
-                  This will remove the selected items from your{' '}
-                  {isArsenal ? 'Arsenal' : 'Dropped list'}. This action cannot be undone.
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowConfirmBulk(false)}
-                    className="flex-1 py-3 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors font-bold text-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleBulkDelete();
-                      setShowConfirmBulk(false);
-                    }}
-                    className="flex-1 py-3 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-all font-bold text-sm shadow-[0_0_20px_rgba(239,68,68,0.3)]"
-                  >
-                    Yes, Delete
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <ConfirmationModal
+          isOpen={showConfirmBulk}
+          onClose={() => setShowConfirmBulk(false)}
+          onConfirm={() => {
+            handleBulkDelete();
+            setShowConfirmBulk(false);
+          }}
+          title={`Delete ${selectedUrls.size} items?`}
+          message={`This will remove the selected items from your ${isArsenal ? 'Arsenal' : 'Dropped list'}. This action cannot be undone.`}
+          confirmText="Yes, Delete"
+        />
 
         {/* Header */}
         <div className="flex flex-col border-b border-zinc-800">

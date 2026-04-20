@@ -1,6 +1,8 @@
 import { UnifiedContent } from '../types';
 import { apiManager } from './api-manager';
 
+// Assuming WESEKAI_CONSTANTS exists and is suitable for this.
+// If not, a new `config.ts` file could be created.
 export const ELITE_ANIME: UnifiedContent[] = [
   {
     type: 'anime',
@@ -162,8 +164,8 @@ export const ELITE_MANHWA: UnifiedContent[] = [
   },
 ];
 
-let lastRefreshTime = 0;
-const REFRESH_COOLDOWN = 1000 * 60 * 60; // 1 hour rate limit
+let lastRefreshTime = 0; // This state should probably be managed by a hook or a more persistent store if the app is long-lived
+const REFRESH_COOLDOWN = 1000 * 60 * 60; // TODO: Move to WESEKAI_CONSTANTS or environment variable
 
 /**
  * Safely extracts the numeric ID from MyAnimeList or AniList URLs.

@@ -1,7 +1,11 @@
 import { useReducer, useEffect, useCallback, useRef } from 'react';
 import { fetchTopAnimeList } from '../lib/mal';
 import { fetchTopManhwa } from '../lib/anilist';
-import { calculateWorldBuildingScore, findBestRecommendation } from '../lib/scoring';
+import {
+  calculateWorldBuildingScore,
+  findBestRecommendation,
+  calculateDampedLearningFactor,
+} from '../lib/scoring'; // Add calculateDampedLearningFactor
 import { ELITE_ANIME, ELITE_MANHWA } from '../lib/elite';
 import { WESEKAI_CONSTANTS } from '../wesekai.constants';
 import { Recommendation, UnifiedContent } from '../types';
@@ -230,7 +234,7 @@ export function useRecommendationEngine() {
       const nextPrefs = { ...tagPreferences };
       rec.tags.forEach(t => {
         const current = nextPrefs[t] || 0;
-        nextPrefs[t] = current + 1.0 / (1 + Math.abs(current));
+        nextPrefs[t] = current + calculateDampedLearningFactor(current);
       });
       dispatch({ type: 'SET_TAG_PREFERENCES', payload: nextPrefs });
       addToast(`Added ${rec.title} to Arsenal`, 'success');
@@ -248,7 +252,7 @@ export function useRecommendationEngine() {
       const nextPrefs = { ...tagPreferences };
       rec.tags.forEach(t => {
         const current = nextPrefs[t] || 0;
-        nextPrefs[t] = current - 0.5 / (1 + Math.abs(current));
+        nextPrefs[t] = current - 0.5 * calculateDampedLearningFactor(current);
       });
       dispatch({ type: 'SET_TAG_PREFERENCES', payload: nextPrefs });
       addToast(`Skipped ${rec.title}`, 'info');

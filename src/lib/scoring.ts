@@ -40,6 +40,16 @@ export function calculateWorldBuildingScore(tags: string[]): ScoringResult {
   };
 }
 
+/**
+ * Calculates a damped learning factor based on the current preference weight.
+ * This helps prevent extreme swings in preference and ensures long-term profile stability.
+ * @param current The current preference weight for a tag.
+ * @returns A damping factor between 0 and 1 (exclusive).
+ */
+export function calculateDampedLearningFactor(current: number): number {
+  return 1.0 / (1 + Math.abs(current));
+}
+
 export function calculateRecommendationScore(
   rec: Recommendation,
   watchlistUrls: Set<string>,
