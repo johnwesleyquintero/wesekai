@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 
 interface FilterBarProps {
   filters: string[];
@@ -10,6 +10,22 @@ interface FilterBarProps {
 export function FilterBar({ filters, activeFilter, setActiveFilter }: FilterBarProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeFilterRef = useRef<HTMLButtonElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 10);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [filters]);
 
   useEffect(() => {
     if (activeFilterRef.current && scrollRef.current) {
@@ -32,6 +48,7 @@ export function FilterBar({ filters, activeFilter, setActiveFilter }: FilterBarP
     >
       <div
         ref={scrollRef}
+        onScroll={checkScroll}
         className="flex sm:flex-wrap justify-start sm:justify-center gap-3 overflow-x-auto sm:overflow-x-visible pb-4 sm:pb-0 px-4 sm:px-0 no-scrollbar relative z-10"
       >
         {filters.map(filter => (
@@ -50,8 +67,16 @@ export function FilterBar({ filters, activeFilter, setActiveFilter }: FilterBarP
           </button>
         ))}
       </div>
-      <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-zinc-950 via-zinc-950/50 to-transparent z-20 pointer-events-none sm:hidden" />
-      <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-zinc-950 via-zinc-950/50 to-transparent z-20 pointer-events-none sm:hidden" />
+      <div
+        className={`absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-zinc-950 via-zinc-950/50 to-transparent z-20 pointer-events-none transition-opacity duration-300 sm:hidden ${
+          canScrollLeft ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+      <div
+        className={`absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-zinc-950 via-zinc-950/50 to-transparent z-20 pointer-events-none transition-opacity duration-300 sm:hidden ${
+          canScrollRight ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
     </motion.div>
   );
 }

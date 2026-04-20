@@ -342,5 +342,6 @@ export function useRecommendationEngine() {
     handleClearDropped,
     toasts,
     candidatePoolLength: candidatePool.length,
+    fetchRecommendations,
   };
 }

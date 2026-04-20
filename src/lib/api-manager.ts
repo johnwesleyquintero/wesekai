@@ -5,7 +5,7 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
-export type ApiErrorCategory = 'RATE_LIMIT' | 'NETWORK' | 'AUTH' | 'SERVER' | 'UNKNOWN';
+export type ApiErrorCategory = 'RATE_LIMIT' | 'NETWORK' | 'AUTH' | 'SERVER' | 'TIMEOUT' | 'UNKNOWN';
 
 export class ApiError extends Error {
   constructor(
@@ -20,6 +20,7 @@ export class ApiError extends Error {
 
 const DEFAULT_CACHE_TTL = 1000 * 60 * 30; // 30 minutes
 const PERSISTENT_CACHE_KEY = 'wesekai_api_cache';
+const REQUEST_TIMEOUT_MS = 12000; // 12 seconds
 const RATE_LIMIT_COOLDOWN = 1000 * 60; // 1 minute cooldown for rate limiting
 
 type RateLimitListener = (isLimited: boolean) => void;
@@ -103,9 +104,16 @@ class ApiManager {
     baseDelay = 1000
   ): Promise<T> {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
       try {
         await this.throttle();
-        const response = await fetch(url, options);
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
 
         if (response.status === 429) {
           this.setRateLimited(true);
@@ -136,6 +144,13 @@ class ApiManager {
 
         return await response.json();
       } catch (err) {
+        clearTimeout(timeoutId);
+
+        if (err instanceof Error && err.name === 'AbortError') {
+          console.error(`[SYSTEM: TIMEOUT] Request to ${url} exceeded temporal threshold.`);
+          throw new ApiError('TIMEOUT', 'Request timed out (Temporal Interference)');
+        }
+
         if (attempt === maxRetries - 1) {
           throw err instanceof ApiError ? err : new ApiError('NETWORK', (err as Error).message);
         }

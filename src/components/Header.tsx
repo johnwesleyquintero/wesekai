@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { Activity, Ban, Library, Shield } from 'lucide-react';
 import { Logo } from './Logo';
+import { WESEKAI_CONSTANTS } from '../wesekai.constants';
 
 interface HeaderProps {
   mediaType: 'all' | 'anime' | 'manhwa';
@@ -11,19 +12,14 @@ interface HeaderProps {
 }
 
 const getLevelInfo = (count: number) => {
-  const level = Math.floor(count / 5) + 1;
-  const titles = [
-    'Apprentice',
-    'Scouter',
-    'Strategist',
-    'World Walker',
-    'Isekai Sage',
-    'Sovereign',
-  ];
+  const config = [...WESEKAI_CONSTANTS.LEVEL_CONFIG].reverse();
+  const level = config.find(l => count >= l.min) || WESEKAI_CONSTANTS.LEVEL_CONFIG[0];
+  const levelNumber = WESEKAI_CONSTANTS.LEVEL_CONFIG.indexOf(level) + 1;
+
   return {
-    level,
-    title: titles[Math.min(level - 1, titles.length - 1)],
-    color: level >= 5 ? 'text-yellow-400' : level >= 3 ? 'text-indigo-400' : 'text-zinc-400',
+    level: levelNumber,
+    title: level.title,
+    color: level.color,
   };
 };
 

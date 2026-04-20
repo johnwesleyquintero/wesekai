@@ -18,14 +18,14 @@ export function Logo({ size = 40, showBackground = true, className = '' }: LogoP
         <defs>
           {/* Background Gradient */}
           <linearGradient id="logo-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#4f46e5" />
-            <stop offset="100%" stopColor="#1e1b4b" />
+            <stop offset="0%" stopColor="var(--color-indigo-600)" />
+            <stop offset="100%" stopColor="var(--color-indigo-950)" />
           </linearGradient>
 
           {/* Accent Gradient */}
           <linearGradient id="logo-accent" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#818cf8" />
-            <stop offset="100%" stopColor="#c084fc" />
+            <stop offset="0%" stopColor="var(--color-indigo-400)" />
+            <stop offset="100%" stopColor="var(--color-purple-400)" />
           </linearGradient>
 
           {/* Glow */}

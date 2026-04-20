@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Cpu, Terminal, Shield, Zap } from 'lucide-react';
 import { SkeletonCard } from './SkeletonCard';
@@ -7,6 +8,7 @@ import { Recommendation } from '../types';
 
 interface RecommendationAreaProps {
   loading: boolean;
+  activeFilter: string;
   currentRec: Recommendation | null;
   candidatePoolLength: number;
   isThinking: boolean;
@@ -14,9 +16,26 @@ interface RecommendationAreaProps {
   handleSkip: (rec: Recommendation) => void;
   handleDrop: (rec: Recommendation) => void;
   tagPreferences: Record<string, number>;
+  onResetFilters?: () => void;
+  onRefresh?: () => void;
 }
 
+const messages = [
+  'Analyzing Taste Vectors',
+  'Calculating World-Building Depth',
+  'Filtering Temporal Anomaly',
+  "Syncing with Sovereign's Codex",
+  'Optimizing Recommendation Matrix',
+];
+
 const IntelligenceLoader = () => {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setMessageIndex(i => (i + 1) % messages.length), 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] w-full max-w-xl mx-auto space-y-8">
       <div className="relative">
@@ -50,9 +69,17 @@ const IntelligenceLoader = () => {
       <div className="flex flex-col items-center space-y-4 w-full">
         <div className="flex items-center gap-3">
           <Terminal className="w-4 h-4 text-indigo-500" />
-          <span className="text-xs font-black uppercase tracking-[0.3em] text-indigo-300/80">
-            Wesley Intelligence Layer
-          </span>
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={messageIndex}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              className="text-xs font-black uppercase tracking-[0.3em] text-indigo-300/80"
+            >
+              {messages[messageIndex]}
+            </motion.span>
+          </AnimatePresence>
         </div>
 
         <div className="h-1 w-48 bg-zinc-800 rounded-full overflow-hidden relative">
@@ -80,6 +107,7 @@ const IntelligenceLoader = () => {
 
 export function RecommendationArea({
   loading,
+  activeFilter,
   currentRec,
   candidatePoolLength,
   isThinking,
@@ -87,6 +115,8 @@ export function RecommendationArea({
   handleSkip,
   handleDrop,
   tagPreferences,
+  onResetFilters,
+  onRefresh,
 }: RecommendationAreaProps) {
   return (
     <div className="w-full relative min-h-[500px] flex justify-center items-start mt-12">
@@ -110,7 +140,12 @@ export function RecommendationArea({
       ) : (!loading && candidatePoolLength > 0) || isThinking ? (
         <IntelligenceLoader />
       ) : (
-        <EmptyState key="empty" />
+        <EmptyState
+          key="empty"
+          activeFilter={activeFilter}
+          onResetFilters={onResetFilters || (() => {})}
+          onRefresh={onRefresh || (() => {})}
+        />
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, memo, FC, useMemo, ReactNode, ComponentType } from 'react';
+import { useState, memo, FC, useMemo, ReactNode, ComponentType, useEffect } from 'react';
 import { motion, Variants, AnimatePresence } from 'motion/react';
 import {
   Crown,
@@ -23,7 +23,7 @@ import { getYouTubeSearchUrl, fetchYouTubeTrailerId } from '../lib/youtube';
 import { getWesleyAnalysis } from '../lib/ai';
 import { TrailerModal } from './TrailerModal';
 
-const IMAGE_PLACEHOLDER_COLOR = '#18181b'; // zinc-900
+const IMAGE_PLACEHOLDER_COLOR = 'var(--color-zinc-900)';
 
 export const cardVariants: Variants = {
   initial: ({ confidence }: { confidence: number }) => {
@@ -248,28 +248,155 @@ const IntelligenceAnalysis = memo(
             </span>
           </motion.button>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex gap-5 p-6 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl relative overflow-hidden group/analysis"
-          >
-            <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500/50" />
-            <Sparkles className="w-6 h-6 text-indigo-400 shrink-0 mt-1 animate-pulse" />
-            <div className="flex flex-col gap-2">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/70">
-                Intelligence Layer Response
-              </span>
-              <p className="text-zinc-300 text-sm italic leading-relaxed font-medium">
-                &quot;{analysis}&quot;
-              </p>
-            </div>
-          </motion.div>
+          <IntelligenceResponse text={analysis} />
         )}
       </AnimatePresence>
     </div>
   )
 );
 IntelligenceAnalysis.displayName = 'IntelligenceAnalysis';
+
+const IntelligenceResponse = ({ text }: { text: string }) => {
+  const [displayedText, setDisplayedText] = useState('');
+
+  useEffect(() => {
+    let i = 0;
+    const timer = setInterval(() => {
+      setDisplayedText(text.slice(0, i));
+      i++;
+      if (i > text.length) clearInterval(timer);
+    }, 15);
+    return () => clearInterval(timer);
+  }, [text]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex gap-5 p-6 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl relative overflow-hidden group/analysis"
+    >
+      <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500/50" />
+      <Sparkles className="w-6 h-6 text-indigo-400 shrink-0 mt-1 animate-pulse" />
+      <div className="flex flex-col gap-2">
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/70">
+          Intelligence Layer Response
+        </span>
+        <p className="text-zinc-300 text-sm italic leading-relaxed font-medium">
+          &quot;{displayedText}&quot;
+          <span className="inline-block w-1 h-4 ml-1 bg-indigo-500/50 animate-pulse" />
+        </p>
+      </div>
+    </motion.div>
+  );
+};
+
+const CardImage = memo(
+  ({
+    imageUrl,
+    title,
+    placeholderColor,
+  }: {
+    imageUrl: string;
+    title: string;
+    placeholderColor?: string;
+  }) => {
+    const [loaded, setLoaded] = useState(false);
+
+    return (
+      <div
+        className="w-full md:w-2/5 relative aspect-[3/4] md:aspect-auto overflow-hidden"
+        style={{
+          backgroundColor: placeholderColor || IMAGE_PLACEHOLDER_COLOR,
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent md:bg-gradient-to-r md:from-transparent md:via-zinc-900/50 md:to-zinc-900 z-10" />
+        <img
+          src={imageUrl}
+          alt={title}
+          className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${
+            loaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'
+          }`}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+        />
+      </div>
+    );
+  }
+);
+CardImage.displayName = 'CardImage';
+
+const CardFooter = memo(
+  ({
+    externalLinks,
+    hasTrailer,
+    canFetchTrailer,
+    isFetchingTrailer,
+    onTrailerClick,
+    onRecapClick,
+    onCopyClick,
+    copied,
+    type,
+  }: {
+    externalLinks: { database: string; watch: string };
+    hasTrailer: boolean;
+    canFetchTrailer: boolean;
+    isFetchingTrailer: boolean;
+    onTrailerClick: () => void;
+    onRecapClick: () => void;
+    onCopyClick: () => void;
+    copied: boolean;
+    type: 'anime' | 'manhwa';
+  }) => (
+    <div className="mt-auto pt-6 sm:pt-8 border-t border-zinc-800/60 flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-6">
+      <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4 md:gap-6">
+        <LinkItem
+          href={externalLinks.database}
+          icon={ExternalLink}
+          className="text-zinc-400 hover:text-indigo-300"
+        >
+          Database
+        </LinkItem>
+
+        {(hasTrailer || canFetchTrailer) && (
+          <LinkItem
+            icon={Play}
+            className={`text-zinc-400 hover:text-red-400 ${isFetchingTrailer ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={onTrailerClick}
+            aria-label="Watch trailer"
+          >
+            Trailer
+          </LinkItem>
+        )}
+
+        <LinkItem
+          icon={Volume2}
+          className="text-zinc-400 hover:text-red-400"
+          onClick={onRecapClick}
+          aria-label="Search for recap on YouTube"
+        >
+          Recap
+        </LinkItem>
+
+        <LinkItem
+          href={externalLinks.watch}
+          icon={PlayCircle}
+          className="text-zinc-400 hover:text-purple-400"
+        >
+          {type === 'manhwa' ? 'Manhwa' : 'Anime'}
+        </LinkItem>
+      </div>
+      <LinkItem
+        icon={copied ? Check : Copy}
+        onClick={onCopyClick}
+        className={copied ? 'text-emerald-400' : 'text-zinc-400 hover:text-emerald-400'}
+      >
+        {copied ? 'Copied!' : 'Copy Title'}
+      </LinkItem>
+    </div>
+  )
+);
+CardFooter.displayName = 'CardFooter';
 
 interface LinkItemProps {
   href?: string;
@@ -433,22 +560,11 @@ export const ResultCard: FC<{
         {recommendation.isElite && <EliteBadge />}
 
         {/* Image Section */}
-        <div
-          className="w-full md:w-2/5 relative aspect-[3/4] md:aspect-auto overflow-hidden"
-          style={{
-            backgroundColor: recommendation.contentData.placeholderColor || IMAGE_PLACEHOLDER_COLOR,
-          }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent md:bg-gradient-to-r md:from-transparent md:via-zinc-900/50 md:to-zinc-900 z-10" />
-          <img
-            src={recommendation.contentData.imageUrl}
-            alt={recommendation.contentData.title}
-            className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 data-[loaded=true]:opacity-100"
-            loading="lazy"
-            decoding="async"
-            onLoad={e => e.currentTarget.setAttribute('data-loaded', 'true')}
-          />
-        </div>
+        <CardImage
+          imageUrl={recommendation.contentData.imageUrl}
+          title={recommendation.contentData.title}
+          placeholderColor={recommendation.contentData.placeholderColor || IMAGE_PLACEHOLDER_COLOR}
+        />
 
         {/* Content Section */}
         <div className="w-full md:w-3/5 p-6 sm:p-8 md:p-10 flex flex-col relative z-20">
@@ -509,55 +625,25 @@ export const ResultCard: FC<{
           />
 
           {/* Footer Link */}
-          <div className="mt-auto pt-6 sm:pt-8 border-t border-zinc-800/60 flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-6">
-            <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4 md:gap-6">
-              <LinkItem
-                href={externalLinks.database}
-                icon={ExternalLink}
-                className="text-zinc-400 hover:text-indigo-300"
-              >
-                Database
-              </LinkItem>
-
-              {(hasTrailer || canFetchTrailer) && (
-                <LinkItem
-                  icon={Play}
-                  className={`text-zinc-400 hover:text-red-400 ${isFetchingTrailer ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  onClick={handleTrailerClick}
-                  aria-label="Watch trailer"
-                >
-                  Trailer
-                </LinkItem>
-              )}
-
-              <LinkItem
-                href={getYouTubeSearchUrl(
+          <CardFooter
+            externalLinks={externalLinks}
+            hasTrailer={hasTrailer}
+            canFetchTrailer={canFetchTrailer}
+            isFetchingTrailer={isFetchingTrailer}
+            onTrailerClick={handleTrailerClick}
+            onRecapClick={() =>
+              window.open(
+                getYouTubeSearchUrl(
                   recommendation.contentData.title,
                   recommendation.contentData.type
-                )}
-                icon={Volume2}
-                className="text-zinc-400 hover:text-red-400"
-                aria-label="Search for recap on YouTube"
-              >
-                Recap
-              </LinkItem>
-
-              <LinkItem
-                href={externalLinks.watch}
-                icon={PlayCircle}
-                className="text-zinc-400 hover:text-purple-400"
-              >
-                {recommendation.contentData.type === 'manhwa' ? 'Manhwa' : 'Anime'}
-              </LinkItem>
-            </div>
-            <LinkItem
-              icon={copied ? Check : Copy}
-              onClick={copyToClipboard}
-              className={copied ? 'text-emerald-400' : 'text-zinc-400 hover:text-emerald-400'}
-            >
-              {copied ? 'Copied!' : 'Copy Title'}
-            </LinkItem>
-          </div>
+                ),
+                '_blank'
+              )
+            }
+            onCopyClick={copyToClipboard}
+            copied={copied}
+            type={recommendation.contentData.type}
+          />
         </div>
       </div>
 

@@ -11,22 +11,7 @@ import { useRecommendationEngine } from './hooks/useRecommendationEngine';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { MobileNav } from './components/MobileNav';
 import { refreshEliteImages } from './lib/elite';
-
-const FILTERS = [
-  'All',
-  'Isekai',
-  'Fantasy',
-  'Action',
-  'Adventure',
-  'Military',
-  'Strategy',
-  'Reincarnation',
-  'Kingdom',
-  'Comedy',
-  'Romance',
-  'Sci-Fi',
-  'Drama',
-];
+import { WESEKAI_CONSTANTS } from './wesekai.constants';
 
 export default function App() {
   const {
@@ -51,6 +36,7 @@ export default function App() {
     handleClearDropped,
     candidatePoolLength,
     toasts,
+    fetchRecommendations,
   } = useRecommendationEngine();
 
   const [modalView, setModalView] = useState<'none' | 'arsenal' | 'dropped' | 'telemetry'>('none');
@@ -76,13 +62,14 @@ export default function App() {
             watchlistCount={watchlist.length}
           />
           <FilterBar
-            filters={FILTERS}
+            filters={WESEKAI_CONSTANTS.FILTERS}
             activeFilter={activeFilter}
             setActiveFilter={setActiveFilter}
           />
           <ErrorState error={error} />
           <RecommendationArea
             loading={loading}
+            activeFilter={activeFilter}
             currentRec={currentRec}
             candidatePoolLength={candidatePoolLength}
             isThinking={isThinking}
@@ -90,6 +77,8 @@ export default function App() {
             handleSkip={handleSkip}
             handleDrop={handleDrop}
             tagPreferences={tagPreferences}
+            onResetFilters={() => setActiveFilter('All')}
+            onRefresh={fetchRecommendations}
           />
         </div>
 
