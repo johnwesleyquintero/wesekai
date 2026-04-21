@@ -32,7 +32,7 @@ export function Header({
               WESEKAI
             </span>
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-500/80 mt-1">
-             AN OP Anime/Manhwa Rec App
+              Anime/Manhwa Recommendation System
             </span>
           </div>
         </div>

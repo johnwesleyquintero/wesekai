@@ -112,7 +112,7 @@ class ApiManager {
   ): Promise<T> {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
-      
+
       try {
         await this.throttle();
         const controller = new AbortController();
