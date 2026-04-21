@@ -37,7 +37,7 @@ export function InfoModal({ onClose }: InfoModalProps) {
             </div>
             <div>
               <h2 className="text-xl font-black tracking-tight text-white uppercase">System Hub</h2>
-              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">WESEKAI Protocols & Mission</p>
+              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Taste Vectoring & Intelligence Protocols</p>
             </div>
           </div>
           <button

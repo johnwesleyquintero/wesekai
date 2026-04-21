@@ -32,7 +32,7 @@ export function Header({
               WESEKAI
             </span>
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-500/80 mt-1">
-              Anime/Manhwa Recommendation System
+              Neural Discovery Protocol // Media Type: Anime • Manhwa
             </span>
           </div>
         </div>
