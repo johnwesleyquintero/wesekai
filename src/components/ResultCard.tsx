@@ -94,7 +94,7 @@ const EliteBadge = memo(() => (
       transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', repeatDelay: 3 }}
       className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12"
     />
-    <Crown className="w-3 h-3" /> Wesley Approved
+    <Crown className="w-3 h-3" /> System Approved
   </motion.div>
 ));
 EliteBadge.displayName = 'EliteBadge';
@@ -254,7 +254,7 @@ const IntelligenceAnalysis = memo(
               <Cpu className="w-5 h-5 group-hover/ai:rotate-12 transition-transform" />
             )}
             <span className="text-sm font-bold uppercase tracking-widest">
-              {isAnalyzing ? 'Accessing Intelligence Layer...' : 'Request Wesley Analysis'}
+              {isAnalyzing ? 'Accessing Intelligence Layer...' : 'Request Analysis'}
             </span>
           </motion.button>
         ) : (
