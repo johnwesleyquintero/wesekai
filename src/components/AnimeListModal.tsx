@@ -43,7 +43,9 @@ export function AnimeListModal({
   const [showConfirmBulk, setShowConfirmBulk] = useState(false);
   const [copiedMarkdown, setCopiedMarkdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortOption, setSortOption] = useState<'default' | 'wb_score_desc' | 'wb_score_asc' | 'mal_score_desc' | 'mal_score_asc'>('default');
+  const [sortOption, setSortOption] = useState<
+    'default' | 'wb_score_desc' | 'wb_score_asc' | 'mal_score_desc' | 'mal_score_asc'
+  >('default');
 
   const isArsenal = type === 'arsenal';
   const Icon = isArsenal ? Library : Ban;
@@ -58,11 +60,9 @@ export function AnimeListModal({
   const linkHover = isArsenal ? 'hover:text-indigo-300' : 'hover:text-red-300';
 
   const filteredList = useMemo(() => {
-    return watchlist.filter(item => 
-      item.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return watchlist.filter(item => item.title.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [watchlist, searchTerm]);
-  
+
   const sortedList = useMemo(() => {
     const list = [...filteredList]; // Create a shallow copy to avoid mutating the original filteredList
 
@@ -140,8 +140,9 @@ export function AnimeListModal({
   const handleCopyMarkdown = () => {
     const header = '| Title | Type | Score | WB Score | Link |';
     const separator = '| :--- | :--- | :--- | :--- | :--- |';
-    const rows = sortedList.map(item => 
-      `| ${item.title.replace(/\|/g, '\\|')} | ${item.contentData.type} | ${item.contentData.score} | ${item.wbScore.toFixed(1)} | [View](${item.contentData.url}) |`
+    const rows = sortedList.map(
+      item =>
+        `| ${item.title.replace(/\|/g, '\\|')} | ${item.contentData.type} | ${item.contentData.score} | ${item.wbScore.toFixed(1)} | [View](${item.contentData.url}) |`
     );
     const markdown = [header, separator, ...rows].join('\n');
 
@@ -273,7 +274,7 @@ export function AnimeListModal({
                     type="text"
                     placeholder={`Search ${isArsenal ? 'arsenal' : 'dropped'}...`}
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={e => setSearchTerm(e.target.value)}
                     className="w-full bg-zinc-950/50 border border-zinc-800/50 rounded-xl py-1.5 pl-9 pr-4 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/30 focus:ring-1 focus:ring-indigo-500/10 transition-all"
                   />
                 </div>
@@ -281,11 +282,13 @@ export function AnimeListModal({
 
               {/* Sort By Dropdown */}
               <div className="relative flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-tight text-zinc-500">Sort By:</span>
+                <span className="text-xs font-bold uppercase tracking-tight text-zinc-500">
+                  Sort By:
+                </span>
                 <div className="relative">
                   <select
                     value={sortOption}
-                    onChange={(e) => setSortOption(e.target.value as typeof sortOption)}
+                    onChange={e => setSortOption(e.target.value as typeof sortOption)}
                     className="appearance-none bg-zinc-950/50 border border-zinc-800/50 rounded-xl py-1.5 pl-4 pr-8 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500/30 focus:ring-1 focus:ring-indigo-500/10 transition-all cursor-pointer"
                   >
                     <option value="default">Date Added (Newest)</option>
@@ -297,7 +300,6 @@ export function AnimeListModal({
                   <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
                 </div>
               </div>
-
 
               <AnimatePresence>
                 {selectedUrls.size > 0 && (
@@ -326,13 +328,17 @@ export function AnimeListModal({
               <p className="text-sm sm:text-base font-light mt-2">{emptySub}</p>
             </div>
           ) : filteredList.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-zinc-500 py-12 sm:py-16"> {/* This should be filteredList.length === 0 */}
+            <div className="h-full flex flex-col items-center justify-center text-zinc-500 py-12 sm:py-16">
+              {' '}
+              {/* This should be filteredList.length === 0 */}
               <Search className="w-12 h-12 mb-4 opacity-10" />
               <p className="text-lg font-display">No matches found</p>
               <p className="text-sm font-light mt-1">Try a different search term</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6"> {/* Use sortedList here */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {' '}
+              {/* Use sortedList here */}
               {sortedList.map(rec => (
                 <div
                   key={rec.contentData.url}

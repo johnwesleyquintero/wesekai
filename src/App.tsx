@@ -48,7 +48,9 @@ export default function App() {
     fetchRecommendations,
   } = useRecommendationEngine();
 
-  const [modalView, setModalView] = useState<'none' | 'arsenal' | 'dropped' | 'telemetry' | 'info'>('none');
+  const [modalView, setModalView] = useState<'none' | 'arsenal' | 'dropped' | 'telemetry' | 'info'>(
+    'none'
+  );
 
   // Update document title dynamically
   useEffect(() => {
@@ -113,9 +115,7 @@ export default function App() {
                 onClose={() => setModalView('none')}
               />
             )}
-            {modalView === 'info' && (
-              <InfoModal onClose={() => setModalView('none')} />
-            )}
+            {modalView === 'info' && <InfoModal onClose={() => setModalView('none')} />}
             {(modalView === 'arsenal' || modalView === 'dropped') && (
               <AnimeListModal
                 type={modalView}
