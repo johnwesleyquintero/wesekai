@@ -211,9 +211,12 @@ export async function refreshEliteImages(): Promise<void> {
 
     const data = await apiManager.fetchWithRetry<{
       data: { Media: { coverImage: { large: string } } };
-    }>('https://graphql.anilist.co', {
+    }>('https://graphql.anilist.co/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
       body: JSON.stringify({ query: ANILIST_MANHWA_QUERY, variables: { id: Number(id) } }),
     });
 

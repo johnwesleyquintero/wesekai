@@ -98,8 +98,9 @@ export function Logo({ size = 40, showBackground = true, className = '' }: LogoP
           <motion.circle
             cx="50"
             cy="50"
-            r="3.5"
+            r={3.5}
             fill="#ffffff"
+            initial={{ r: 3.5, opacity: 0.8 }}
             animate={{ r: [3.5, 4.5, 3.5], opacity: [0.8, 1, 0.8] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           />

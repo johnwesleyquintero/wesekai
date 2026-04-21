@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+        includeAssets: ['favicon.svg'],
         manifest: {
           name: 'WESEKAI - Preference Vector Field Simulator',
           short_name: 'WESEKAI',
@@ -72,8 +72,9 @@ export default defineConfig(({ mode }) => {
               },
             },
             {
-              urlPattern: /^https:\/\/graphql\.anilist\.co/i,
+              urlPattern: /^https:\/\/graphql\.anilist\.co\//i,
               handler: 'NetworkFirst',
+              method: 'POST',
               options: {
                 cacheName: 'anilist-api-cache',
                 expiration: {

@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
-import { AlertCircle, RefreshCw, Copy, Check } from 'lucide-react';
+import { AlertCircle, RefreshCw, Copy, Check, SearchX } from 'lucide-react';
 import { JikanRateLimitError } from '../lib/errors';
+import { ApiError } from '../lib/api-manager';
 
 interface Props {
   children: ReactNode;
@@ -11,13 +12,20 @@ interface State {
   hasError: boolean;
   error: Error | null;
   isJikanRateLimitError: boolean; // New state to identify Jikan rate limit errors
+  isNotFoundError: boolean;
   copied: boolean;
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null, isJikanRateLimitError: false, copied: false };
+    this.state = {
+      hasError: false,
+      error: null,
+      isJikanRateLimitError: false,
+      isNotFoundError: false,
+      copied: false,
+    };
   }
 
   // This method is called after an error has been thrown by a descendant component.
@@ -27,6 +35,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
       hasError: true,
       error,
       isJikanRateLimitError: error instanceof JikanRateLimitError,
+      isNotFoundError:
+        (error instanceof ApiError && error.category === 'NOT_FOUND') ||
+        (typeof error === 'object' &&
+          error !== null &&
+          'category' in error &&
+          // We cast to { category: unknown } to safely access the property, then compare its value.
+          (error as { category: unknown }).category === 'NOT_FOUND'),
       copied: false,
     };
   }
@@ -74,6 +89,26 @@ export class ErrorBoundary extends React.Component<Props, State> {
             >
               <RefreshCw className="w-5 h-5" />
               Retry with Elite Fallback
+            </button>
+          </div>
+        );
+      } else if (this.state.isNotFoundError) {
+        return (
+          <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center bg-zinc-900/50 border border-indigo-500/20 rounded-3xl backdrop-blur-xl">
+            <div className="p-4 bg-indigo-500/10 rounded-full mb-6">
+              <SearchX className="w-12 h-12 text-indigo-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-3">Resource Not Found</h2>
+            <p className="text-zinc-400 mb-8 max-w-md">
+              The Intelligence Layer could not locate the requested entity. This may occur during
+              temporal API synchronization.
+            </p>
+            <button
+              onClick={this.handleReset}
+              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
+            >
+              <RefreshCw className="w-5 h-5" />
+              Re-synchronize Data
             </button>
           </div>
         );

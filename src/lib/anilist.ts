@@ -68,10 +68,13 @@ export async function fetchTopManhwa(filter: string = 'All'): Promise<UnifiedCon
     const allManhwa: AniListMedia[] = [];
     for (let page = 1; page <= 2; page++) {
       const data = await apiManager.fetchWithRetry<{ data: { Page: { media: AniListMedia[] } } }>(
-        'https://graphql.anilist.co',
+        'https://graphql.anilist.co/', // Added trailing slash for consistency with environment normalization
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
           body: JSON.stringify({ query, variables: { page } }),
         }
       );

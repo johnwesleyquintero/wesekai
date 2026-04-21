@@ -5,11 +5,18 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
-export type ApiErrorCategory = 'RATE_LIMIT' | 'NETWORK' | 'AUTH' | 'SERVER' | 'TIMEOUT' | 'UNKNOWN';
+export type ApiErrorCategory =
+  | 'RATE_LIMIT'
+  | 'NETWORK'
+  | 'AUTH'
+  | 'SERVER'
+  | 'TIMEOUT'
+  | 'NOT_FOUND'
+  | 'UNKNOWN';
 
 export class ApiError extends Error {
   constructor(
-    public category: ApiErrorCategory,
+    public readonly category: ApiErrorCategory,
     message: string,
     public status?: number
   ) {
@@ -146,6 +153,9 @@ class ApiManager {
 
         if (!response.ok) {
           if (timeoutId) clearTimeout(timeoutId);
+          if (response.status === 404) {
+            throw new ApiError('NOT_FOUND', `Resource not found (404): ${url}`, 404);
+          }
           throw new ApiError(
             response.status >= 500 ? 'SERVER' : 'UNKNOWN',
             `HTTP error! status: ${response.status}`,
