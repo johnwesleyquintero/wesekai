@@ -1,12 +1,12 @@
 import { motion } from 'motion/react';
-import { Activity, Ban, Library, Shield } from 'lucide-react';
+import { Activity, Ban, Info, Library, Shield } from 'lucide-react';
 import { Logo } from './Logo';
 import { getLevelInfo } from '../lib/level-utils';
 
 interface HeaderProps {
   mediaType: 'all' | 'anime' | 'manhwa';
   setMediaType: (type: 'all' | 'anime' | 'manhwa') => void;
-  setModalView: (view: 'none' | 'arsenal' | 'dropped' | 'telemetry') => void;
+  setModalView: (view: 'none' | 'arsenal' | 'dropped' | 'telemetry' | 'info') => void;
   droppedCount: number;
   watchlistCount: number;
 }
@@ -60,6 +60,15 @@ export function Header({
           </motion.div>
 
           <div className="h-8 w-px bg-zinc-800/50 mx-1" />
+
+          <button
+            onClick={() => setModalView('info')}
+            className="group flex items-center gap-2 px-4 py-2 bg-zinc-900/40 border border-zinc-800/50 rounded-xl text-zinc-400 hover:text-indigo-400 hover:border-indigo-500/30 transition-all backdrop-blur-sm"
+            aria-label="Open System Information"
+          >
+            <Info className="w-4 h-4 text-indigo-500/70 group-hover:text-indigo-400 transition-colors" />
+            <span className="font-bold text-xs uppercase tracking-tight">Mission</span>
+          </button>
 
           <button
             onClick={() => setModalView('telemetry')}

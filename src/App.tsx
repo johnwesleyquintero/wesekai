@@ -15,6 +15,9 @@ import { WESEKAI_CONSTANTS } from './wesekai.constants';
 const TelemetryModal = lazy(() =>
   import('./components/TelemetryModal').then(module => ({ default: module.TelemetryModal }))
 );
+const InfoModal = lazy(() =>
+  import('./components/InfoModal').then(module => ({ default: module.InfoModal }))
+);
 const AnimeListModal = lazy(() =>
   import('./components/AnimeListModal').then(module => ({ default: module.AnimeListModal }))
 );
@@ -45,7 +48,7 @@ export default function App() {
     fetchRecommendations,
   } = useRecommendationEngine();
 
-  const [modalView, setModalView] = useState<'none' | 'arsenal' | 'dropped' | 'telemetry'>('none');
+  const [modalView, setModalView] = useState<'none' | 'arsenal' | 'dropped' | 'telemetry' | 'info'>('none');
 
   // Update document title dynamically
   useEffect(() => {
@@ -109,6 +112,9 @@ export default function App() {
                 sessionMemory={sessionMemory}
                 onClose={() => setModalView('none')}
               />
+            )}
+            {modalView === 'info' && (
+              <InfoModal onClose={() => setModalView('none')} />
             )}
             {(modalView === 'arsenal' || modalView === 'dropped') && (
               <AnimeListModal

@@ -13,6 +13,10 @@ import {
   Square,
   Trash,
   Download,
+  Copy,
+  Check,
+  Search,
+  ChevronDown,
 } from 'lucide-react';
 import { Recommendation } from '../types';
 import { getYouTubeSearchUrl } from '../lib/youtube';
@@ -37,6 +41,9 @@ export function AnimeListModal({
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [showConfirmBulk, setShowConfirmBulk] = useState(false);
+  const [copiedMarkdown, setCopiedMarkdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortOption, setSortOption] = useState<'default' | 'wb_score_desc' | 'wb_score_asc' | 'mal_score_desc' | 'mal_score_asc'>('default');
 
   const isArsenal = type === 'arsenal';
   const Icon = isArsenal ? Library : Ban;
@@ -50,8 +57,38 @@ export function AnimeListModal({
   const hoverBorder = isArsenal ? 'hover:border-indigo-500/30' : 'hover:border-red-500/30';
   const linkHover = isArsenal ? 'hover:text-indigo-300' : 'hover:text-red-300';
 
-  const allUrls = useMemo(() => watchlist.map(r => r.contentData.url), [watchlist]);
-  const isAllSelected = watchlist.length > 0 && selectedUrls.size === watchlist.length;
+  const filteredList = useMemo(() => {
+    return watchlist.filter(item => 
+      item.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [watchlist, searchTerm]);
+  
+  const sortedList = useMemo(() => {
+    const list = [...filteredList]; // Create a shallow copy to avoid mutating the original filteredList
+
+    switch (sortOption) {
+      case 'wb_score_desc':
+        list.sort((a, b) => b.wbScore - a.wbScore);
+        break;
+      case 'wb_score_asc':
+        list.sort((a, b) => a.wbScore - b.wbScore);
+        break;
+      case 'mal_score_desc':
+        list.sort((a, b) => b.contentData.score - a.contentData.score);
+        break;
+      case 'mal_score_asc':
+        list.sort((a, b) => a.contentData.score - b.contentData.score);
+        break;
+      case 'default': // Implies date added (order in watchlist)
+      default:
+        // No sorting needed, filteredList already maintains original order
+        break;
+    }
+    return list;
+  }, [filteredList, sortOption]);
+
+  const allUrls = useMemo(() => sortedList.map(r => r.contentData.url), [sortedList]);
+  const isAllSelected = sortedList.length > 0 && selectedUrls.size === allUrls.length;
 
   const toggleSelectAll = () => {
     if (isAllSelected) {
@@ -98,6 +135,19 @@ export function AnimeListModal({
     link.setAttribute('download', `wesekai-${type}-${new Date().toISOString().split('T')[0]}.csv`);
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleCopyMarkdown = () => {
+    const header = '| Title | Type | Score | WB Score | Link |';
+    const separator = '| :--- | :--- | :--- | :--- | :--- |';
+    const rows = sortedList.map(item => 
+      `| ${item.title.replace(/\|/g, '\\|')} | ${item.contentData.type} | ${item.contentData.score} | ${item.wbScore.toFixed(1)} | [View](${item.contentData.url}) |`
+    );
+    const markdown = [header, separator, ...rows].join('\n');
+
+    navigator.clipboard.writeText(markdown);
+    setCopiedMarkdown(true);
+    setTimeout(() => setCopiedMarkdown(false), 2000);
   };
 
   const handleBulkDelete = () => {
@@ -157,6 +207,13 @@ export function AnimeListModal({
               {watchlist.length > 0 && (
                 <div className="flex items-center gap-1">
                   <button
+                    onClick={handleCopyMarkdown}
+                    className={`p-2 transition-colors ${copiedMarkdown ? 'text-emerald-400' : 'text-zinc-500 hover:text-indigo-400'}`}
+                    aria-label="Copy as Markdown Table"
+                  >
+                    {copiedMarkdown ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                  </button>
+                  <button
                     onClick={handleExportJSON}
                     className="p-2 text-zinc-500 hover:text-indigo-400 transition-colors"
                     title="Export as JSON"
@@ -196,18 +253,51 @@ export function AnimeListModal({
           </div>
 
           {watchlist.length > 0 && (
-            <div className="px-6 sm:px-8 pb-4 flex items-center justify-between">
-              <button
-                onClick={toggleSelectAll}
-                className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors"
-              >
-                {isAllSelected ? (
-                  <CheckSquare className={`w-4 h-4 ${themeColor}`} />
-                ) : (
-                  <Square className="w-4 h-4" />
-                )}
-                {isAllSelected ? 'Deselect All' : 'Select All'}
-              </button>
+            <div className="px-6 sm:px-8 pb-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex items-center gap-4 w-full sm:w-auto">
+                <button
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors shrink-0"
+                >
+                  {isAllSelected ? (
+                    <CheckSquare className={`w-4 h-4 ${themeColor}`} />
+                  ) : (
+                    <Square className="w-4 h-4" />
+                  )}
+                  {isAllSelected ? 'Deselect' : 'Select All'}
+                </button>
+
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+                  <input
+                    type="text"
+                    placeholder={`Search ${isArsenal ? 'arsenal' : 'dropped'}...`}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-zinc-950/50 border border-zinc-800/50 rounded-xl py-1.5 pl-9 pr-4 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/30 focus:ring-1 focus:ring-indigo-500/10 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Sort By Dropdown */}
+              <div className="relative flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-tight text-zinc-500">Sort By:</span>
+                <div className="relative">
+                  <select
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value as typeof sortOption)}
+                    className="appearance-none bg-zinc-950/50 border border-zinc-800/50 rounded-xl py-1.5 pl-4 pr-8 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500/30 focus:ring-1 focus:ring-indigo-500/10 transition-all cursor-pointer"
+                  >
+                    <option value="default">Date Added (Newest)</option>
+                    <option value="wb_score_desc">WB Score (High to Low)</option>
+                    <option value="wb_score_asc">WB Score (Low to High)</option>
+                    <option value="mal_score_desc">MAL Score (High to Low)</option>
+                    <option value="mal_score_asc">MAL Score (Low to High)</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+                </div>
+              </div>
+
 
               <AnimatePresence>
                 {selectedUrls.size > 0 && (
@@ -235,9 +325,15 @@ export function AnimeListModal({
               <p className="text-lg sm:text-xl font-display">{emptyMsg}</p>
               <p className="text-sm sm:text-base font-light mt-2">{emptySub}</p>
             </div>
+          ) : filteredList.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-zinc-500 py-12 sm:py-16"> {/* This should be filteredList.length === 0 */}
+              <Search className="w-12 h-12 mb-4 opacity-10" />
+              <p className="text-lg font-display">No matches found</p>
+              <p className="text-sm font-light mt-1">Try a different search term</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {watchlist.map(rec => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6"> {/* Use sortedList here */}
+              {sortedList.map(rec => (
                 <div
                   key={rec.contentData.url}
                   className={`flex gap-4 sm:gap-5 p-4 sm:p-5 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl group ${hoverBorder} transition-colors relative`}

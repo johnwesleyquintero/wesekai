@@ -1,9 +1,9 @@
 import { motion } from 'motion/react';
-import { Activity, Ban, Library } from 'lucide-react';
+import { Activity, Ban, Info, Library } from 'lucide-react';
 import { getLevelInfo } from '../lib/level-utils';
 
 interface MobileNavProps {
-  setModalView: (view: 'none' | 'arsenal' | 'dropped' | 'telemetry') => void;
+  setModalView: (view: 'none' | 'arsenal' | 'dropped' | 'telemetry' | 'info') => void;
   droppedCount: number;
   watchlistCount: number;
 }
@@ -18,6 +18,15 @@ export function MobileNav({ setModalView, droppedCount, watchlistCount }: Mobile
       className="fixed bottom-0 left-0 right-0 z-50 sm:hidden px-4 pb-6 pt-2 bg-gradient-to-t from-black via-black/95 to-transparent"
     >
       <div className="flex items-center justify-around bg-zinc-900/80 border border-zinc-800/50 rounded-2xl p-2 backdrop-blur-xl shadow-2xl">
+        <button
+          onClick={() => setModalView('info')}
+          aria-label="View mission and info"
+          className="flex flex-col items-center gap-1 p-3 text-zinc-400 hover:text-indigo-400 transition-colors"
+        >
+          <Info className="w-5 h-5" />
+          <span className="text-[10px] font-bold uppercase tracking-tighter">Info</span>
+        </button>
+
         <button
           onClick={() => setModalView('telemetry')}
           aria-label="View telemetry data"
