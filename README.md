@@ -9,7 +9,7 @@ WESEKAI is an advanced recommendation engine designed to model the evolution of 
 - **Behavioral Learning Engine:** Implements a damped learning algorithm to map user preferences without hitting "taste prison" local minima.
 - **Dual-Source Aggregation:** Real-time data fetching from MyAnimeList (Jikan API) and AniList (GraphQL).
 - **World-Building Analysis:** Proprietary scoring system that evaluates narrative depth based on thematic tag density.
-- **Hybrid Media Discovery:** Integrated YouTube API for trailer fetching with automated search fallbacks for series recaps.
+- **Hybrid Media Discovery:** Integrated YouTube API for trailer fetching with dynamic ID resolution and automated search fallbacks.
 - **Explainable AI (XAI):** Integrated "Wesley Intelligence" provides natural language reasoning for every recommendation.
 - **Dynamic UI/UX:** Motion-driven interface where animation physics correspond to recommendation confidence levels.
 
@@ -27,7 +27,7 @@ The system operates on a sophisticated five-layer cognitive model:
 ### 2. Data Layer
 
 - **API Integration:** Parallel fetching from Jikan (REST) and AniList (GraphQL).
-- **Resiliency Layer:** Implements automated fallbacks to a curated `ELITE` dataset in the event of upstream API rate-limiting or downtime.
+- **Resiliency Layer:** Centralized `ApiManager` with exponential backoff, persistent caching, and automated fallbacks to a curated `ELITE` dataset during rate-limiting.
 - **Schema Normalization:** Transforms heterogeneous API responses into a strictly typed `UnifiedContent` interface.
 
 ### 3. Dynamics Layer
@@ -50,10 +50,10 @@ The system operates on a sophisticated five-layer cognitive model:
 
 ## 🛠️ Tech Stack
 
-- **Core:** React 19, Vite 6, TypeScript
+- **Core:** React 19, Vite 8, TypeScript
 - **State:** Custom Reducer-based Engine with Behavioral Hooks
 - **Styling:** Tailwind CSS 4 (Atomic CSS)
-- **Motion:** Motion (`motion/react`)
+- **Motion:** Motion 12 (`motion/react`)
 - **Data:** Jikan API v4, AniList GraphQL
 
 ## 🚀 Installation & Setup
